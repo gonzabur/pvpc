@@ -73,7 +73,8 @@ const LABEL = { barato: 'barato', medio: 'medio', caro: 'caro' };
 let data = null;          // { today, tomorrow }
 let loadedDate = null;    // fecha de Madrid con la que se cargó
 let lastFetch = 0;
-let lastHour = -1;
+let lastIdx = -1;         // índice de la hora vigente en el último render
+let loading = false;
 
 function dayBlock(title, day, nowIdx) {
   const s = stats(day);
@@ -98,7 +99,7 @@ function dayBlock(title, day, nowIdx) {
     const li = el('li', null, i === nowIdx ? 'now-row' : '');
     const track = el('div', null, 'track');
     const bar = el('div', null, 'bar ' + lv);
-    bar.style.width = Math.max(0, e.price / s.max * 100) + '%';
+    bar.style.width = Math.min(100, Math.max(0, s.max > 0 ? e.price / s.max * 100 : 0)) + '%';
     track.append(bar);
     li.append(el('span', e.hour), track, el('span', fmtNum(e.price), 'val'));
     if (i === nowIdx) li.append(el('span', '◀ ahora', 'tag'));
@@ -122,10 +123,10 @@ function dayBlock(title, day, nowIdx) {
 
 function render() {
   const now = new Date();
-  lastHour = madridNow(now).hour;
+  lastIdx = currentIndex(data.today, now.getTime());
   $('estado').hidden = true;
   const hoy = $('hoy');
-  hoy.replaceChildren(dayBlock('Hoy', data.today, currentIndex(data.today, now.getTime())));
+  hoy.replaceChildren(dayBlock('Hoy', data.today, lastIdx));
   hoy.hidden = false;
   const man = $('manana');
   man.replaceChildren(data.tomorrow.length
@@ -136,13 +137,17 @@ function render() {
 }
 
 async function load() {
+  if (loading) return;
+  loading = true;
   const { date } = madridNow();
-  $('estado').hidden = false;
-  $('retry').hidden = true;
-  if (!data) $('msg').textContent = 'Cargando precios…';
+  if (!data) {
+    $('estado').hidden = false;
+    $('retry').hidden = true;
+    $('msg').textContent = 'Cargando precios…';
+  }
   try {
     const tomorrow = addDays(date, 1);
-    const res = await fetch(buildUrl(date, tomorrow));
+    const res = await fetch(buildUrl(date, tomorrow), { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     data = parse(await res.json(), date, tomorrow);
     loadedDate = date;
@@ -153,6 +158,8 @@ async function load() {
     if (data) { $('estado').hidden = true; lastFetch = Date.now(); return; }  // datos ya en pantalla: se reintenta más tarde
     $('msg').textContent = 'No se pudieron cargar los precios (' + err.message + ').';
     $('retry').hidden = false;
+  } finally {
+    loading = false;
   }
 }
 
@@ -164,7 +171,7 @@ setInterval(() => {
   if (date !== loadedDate) { data = null; $('hoy').hidden = $('manana').hidden = true; load(); }
   else if (!data) return;
   else if (!data.tomorrow.length && hour >= 20 && Date.now() - lastFetch >= 10 * 60e3) load();
-  else if (hour !== lastHour) render();
+  else if (currentIndex(data.today, Date.now()) !== lastIdx) render();
 }, 30e3);
 </script>
 </body>
