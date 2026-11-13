@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -98,3 +98,6 @@ export const fmt = (p) => `${fmtNum(p)} €/kWh`;
 // 'AAAA-MM-DD' -> 'vie 13 nov'
 export const fmtDate = (ymd) => new Intl.DateTimeFormat('es-ES', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' })
   .format(Date.parse(ymd + 'T12:00:00Z')).replace(',', '');
+
+// '13' -> '13-14', '23' -> '23-24'
+export const fmtRange = (h) => `${h}-${String(Number(h) + 1).padStart(2, '0')}`;

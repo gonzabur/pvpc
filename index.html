@@ -9,42 +9,59 @@
 :root {
   --bg: #f6f7f9; --card: #fff; --fg: #1b1f24; --muted: #5d6673; --line: #dde1e7;
   --barato: #2e9e5b; --medio: #e0a100; --caro: #d6403a; --now: #1b1f24;
+  --barato-t: #17703e; --medio-t: #8a6200; --caro-t: #b3261e; /* texto: >= 4.5:1 sobre --card */
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14171b; --card: #1e2227; --fg: #eceff3; --muted: #9aa4b2; --line: #333a43;
     --barato: #3fbf75; --medio: #e8b422; --caro: #ef5f58; --now: #fff;
+    --barato-t: #3fbf75; --medio-t: #e8b422; --caro-t: #ff7a73;
   }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
 main { max-width: 1000px; margin: 0 auto; padding: 12px 10px; }
 h1 { font-size: 1.2rem; margin: 0 0 10px; }
-h2 { font-size: 1rem; margin: 0; }
+h2 { font-size: 1rem; line-height: 1.3; margin: 0; }
 p { margin: 0; }
 section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 6px; }
 .muted { color: var(--muted); font-size: .75rem; }
-.barato { --c: var(--barato); } .medio { --c: var(--medio); } .caro { --c: var(--caro); }
+.barato { --c: var(--barato); --t: var(--barato-t); }
+.medio { --c: var(--medio); --t: var(--medio-t); }
+.caro { --c: var(--caro); --t: var(--caro-t); }
 .hero { margin-bottom: 8px; padding: 12px; }
 .hero .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .now { font-size: clamp(1.8rem, 9vw, 2.6rem); font-weight: 700; line-height: 1.2; }
-.badge { border: 1px solid var(--c, var(--muted)); border-radius: 999px; padding: 0 6px; font-size: .6875rem; font-weight: 700; white-space: nowrap; }
+.badge { border: 1px solid var(--c, var(--muted)); color: var(--t, inherit); border-radius: 999px; padding: 0 6px; font-size: .6875rem; font-weight: 700; white-space: nowrap; }
 .hero .badge { border-width: 2px; font-size: 1rem; padding: 1px 12px; }
-.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
-.title { display: flex; align-items: center; gap: 6px; height: 24px; }
+/* Las dos tarjetas comparten filas (subgrid): cabecera, resumen y horas quedan alineadas aunque una cabecera ocupe más líneas. */
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; }
+.cards section { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; }
+.title { display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: 2px 6px; }
+.info { width: 28px; height: 28px; margin: -2px 0; padding: 0; border: 1.5px solid var(--muted); border-radius: 50%; background: none; color: var(--fg); font-weight: 700; line-height: 1; }
 .sum { margin: 6px 0 8px; font-size: .75rem; }
-.stat { display: flex; justify-content: space-between; gap: 4px; height: 18px; white-space: nowrap; }
+.stat { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 4px; }
+.stat b { margin-left: auto; white-space: nowrap; }
 ol.bars { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; --vw: 3.8em; }
-ol.bars.approx { --vw: 5em; }
-ol.bars li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr) var(--vw); gap: 6px; align-items: center; height: 22px; padding: 0 2px; border-radius: 6px; font-size: .75rem; white-space: nowrap; }
+ol.bars.approx { --vw: 4.8em; }
+ol.bars li { position: relative; display: grid; grid-template-columns: 3.3em minmax(0, 1fr) var(--vw); gap: 4px; align-items: center; height: 22px; padding: 0 2px 0 4px; border-radius: 6px; font-size: .75rem; white-space: nowrap; }
 ol.bars li.now-row { outline: 2px solid var(--now); outline-offset: -2px; background: color-mix(in srgb, var(--now) 8%, transparent); }
+.tri { position: absolute; left: -7px; top: 50%; transform: translateY(-50%); font-size: .625rem; line-height: 1; }
+.t-min { color: var(--barato-t); } .t-max { color: var(--caro-t); }
 .track { height: 12px; }
 .bar { height: 100%; border-radius: 3px; min-width: 2px; background: var(--c); }
-.val { text-align: right; }
+.val { text-align: right; color: var(--t); }
 .legend { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 8px 0 4px; }
 .dot { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: 4px; background: var(--c); }
 #estado { text-align: center; padding: 16px; }
-button { font: inherit; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+button { font: inherit; cursor: pointer; }
+.btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+#info { width: calc(100% - 24px); max-width: 32rem; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--fg); }
+#info::backdrop { background: rgb(0 0 0 / .55); }
+#info > div { padding: 16px; }
+#info h2 { font-size: 1.1rem; margin-bottom: 10px; }
+#info p { margin-bottom: 10px; font-size: .95rem; line-height: 1.45; }
+#info form { text-align: right; }
 footer { text-align: center; margin-top: 12px; }
 [hidden] { display: none !important; }
 @media (min-width: 700px) {
@@ -55,10 +72,10 @@ footer { text-align: center; margin-top: 12px; }
   .muted, .sum, ol.bars li { font-size: .9rem; }
   .badge { font-size: .75rem; }
   .hero { margin-bottom: 16px; }
-  .cards { gap: 16px; }
+  .cards { column-gap: 16px; }
   .sum { margin: 8px 0 12px; }
-  .stat { height: 22px; }
-  ol.bars li { height: 28px; gap: 10px; }
+  ol.bars li { height: 28px; gap: 10px; padding: 0 4px 0 6px; }
+  .tri { left: -9px; font-size: .75rem; }
   .track { height: 16px; }
 }
 </style>
@@ -69,7 +86,7 @@ footer { text-align: center; margin-top: 12px; }
   <p id="sim" class="muted" hidden></p>
   <section id="estado" aria-live="polite">
     <p id="msg">Cargando precios…</p>
-    <button id="retry" hidden>Reintentar</button>
+    <button id="retry" class="btn" hidden>Reintentar</button>
   </section>
   <div id="panel" hidden>
     <section id="ahora" class="hero" hidden></section>
@@ -79,16 +96,26 @@ footer { text-align: center; margin-top: 12px; }
     </div>
     <p class="legend muted">
       <span><i class="dot barato"></i>barato</span><span><i class="dot medio"></i>medio</span><span><i class="dot caro"></i>caro</span>
-      <span>▼ más barata</span><span>▲ más cara</span>
+      <span><b class="t-min">▼</b> más barata</span><span><b class="t-max">▲</b> más cara</span>
     </p>
-    <p id="nota" class="muted" hidden>Estimación a partir del mercado mayorista. Orienta sobre las horas baratas y caras; el precio exacto puede variar. Los precios oficiales se publican sobre las 20:15.</p>
+    <p id="nota" class="muted" hidden>Mañana es una estimación a partir del mercado mayorista; el precio oficial se publica sobre las 20:15.</p>
   </div>
+  <dialog id="info">
+    <div>
+      <h2>¿De dónde sale esta estimación?</h2>
+      <p><b>Lo que ya se conoce.</b> A las 12:00 OMIE cierra la subasta del mercado mayorista para mañana y, sobre las 13:00, publica el precio de la energía de cada hora.</p>
+      <p><b>Lo que falta.</b> Ese precio todavía no es el PVPC. Faltan los peajes y cargos (más altos en horas punta, más bajos en valle y fines de semana), los servicios de ajuste del sistema y el ajuste por mercados de futuros de la tarifa regulada.</p>
+      <p><b>Cómo se estima.</b> Al precio mayorista de mañana se le suma la diferencia que hubo entre el PVPC y el mayorista a la misma hora del mismo día de la semana pasada.</p>
+      <p><b>Fiabilidad.</b> Orienta sobre qué horas serán baratas y caras; el precio exacto puede variar unos céntimos. Red Eléctrica publica el PVPC oficial sobre las 20:15 y esta tarjeta se actualiza sola.</p>
+      <form method="dialog"><button class="btn">Cerrar</button></form>
+    </div>
+  </dialog>
   <footer class="muted">
     <p>Datos: REE (apidatos.ree.es) · Actualizado: <span id="updated">—</span> · <span id="version"></span></p>
   </footer>
 </main>
 <script type="module">
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -110,8 +137,14 @@ function dayBlock(title, date, day, nowIdx, approx) {
   const frag = document.createDocumentFragment();
   const head = el('div', null, 'title');
   head.append(el('h2', title));
-  if (approx) head.append(el('span', 'estimación', 'badge'));
-  frag.append(head, el('p', fmtDate(date) + (day.length ? ' · €/kWh' : ''), 'muted'));
+  if (approx) {
+    const info = el('button', 'i', 'info');
+    info.type = 'button';
+    info.setAttribute('aria-label', 'Cómo se calcula la estimación');
+    info.onclick = () => $('info').showModal();
+    head.append(el('span', 'estimación', 'badge'), info);
+  }
+  frag.append(el('p', fmtDate(date) + (day.length ? ' · €/kWh' : ''), 'muted'), head);
   if (!day.length) {
     frag.append(el('p', 'Los precios de mañana se publican sobre las 20:15'));
     return frag;
@@ -127,8 +160,8 @@ function dayBlock(title, date, day, nowIdx, approx) {
   const sum = el('div', null, 'sum');
   sum.append(
     stat('Media', n(s.avg)),
-    stat('Más barata', `${day[s.minI].hour}h ${n(s.min)}`),
-    stat('Más cara', `${day[s.maxI].hour}h ${n(s.max)}`),
+    stat('Más barata', `${fmtRange(day[s.minI].hour)} · ${n(s.min)}`),
+    stat('Más cara', `${fmtRange(day[s.maxI].hour)} · ${n(s.max)}`),
   );
 
   const ol = el('ol', null, approx ? 'bars approx' : 'bars');
@@ -139,8 +172,10 @@ function dayBlock(title, date, day, nowIdx, approx) {
     const bar = el('div', null, 'bar ' + lv);
     bar.style.width = Math.min(100, Math.max(0, s.max > 0 ? e.price / s.max * 100 : 0)) + '%';
     track.append(bar);
-    li.append(el('span', e.hour + (i === s.minI ? '▼' : i === s.maxI ? '▲' : '')), track, el('span', n(e.price), 'val'));
-    li.title = `${e.hour}:00: ${n(e.price)} €/kWh (${lv})`;
+    if (i === s.minI) li.append(el('span', '▼', 'tri t-min'));
+    if (i === s.maxI) li.append(el('span', '▲', 'tri t-max'));
+    li.append(el('span', fmtRange(e.hour)), track, el('span', n(e.price), 'val ' + lv));
+    li.title = `${fmtRange(e.hour)} h: ${n(e.price)} €/kWh (${lv})`;
     ol.append(li);
   });
   frag.append(sum, ol);
@@ -205,6 +240,7 @@ if (sim) {
   $('sim').hidden = false;
 }
 $('retry').onclick = load;
+$('info').onclick = (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); };  // clic en el fondo
 load();
 
 if (!sim) setInterval(() => {

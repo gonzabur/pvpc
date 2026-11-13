@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -94,6 +94,7 @@ assert.ok(isValidDate('2026-11-11'));
 for (const bad of ['2026-02-30', '2026-13-01', '2026-1-1', 'hoy', '', null]) assert.ok(!isValidDate(bad), String(bad));
 assert.equal(fmtDate('2026-11-13'), 'vie 13 nov');
 assert.equal(fmtDate('2026-12-01'), 'mar 1 dic');
+assert.deepEqual(['00', '09', '13', '23'].map(fmtRange), ['00-01', '09-10', '13-14', '23-24']);
 assert.match(VERSION, /^\d+\.\d+\.\d+$/);
 
 console.log('OK: todas las comprobaciones pasan');
