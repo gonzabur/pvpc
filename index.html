@@ -200,6 +200,7 @@ let loadedDate = null;    // fecha de Madrid con la que se cargó
 let lastFetch = 0;
 let lastIdx = -1;         // índice de la hora vigente en el último render
 let loading = false;
+let reload = false;       // cambio de día pedido durante una carga: se recarga al terminar
 
 // Tarjeta de un día: cabecera, resumen y una fila fija por hora. approx: precios estimados ("≈ ").
 function dayBlock(title, date, day, nowIdx, approx) {
@@ -329,11 +330,13 @@ function updateCalc() {
   const { line, kw } = chargeKw(tri ? 3 : 1, amp, max);
   $('calc-kw').textContent = isNaN(kw) ? '' : `${String(amp).replace('.', ',')} A × ${tri ? '400 V × √3' : '230 V'} = ${dec(line, 1)} kW → se carga a ${dec(kw, 1)} kW`;
   const out = $('calc-out');
+  // #calc-out es aria-live: solo se toca si el contenido cambia (el ciclo de 30 s no debe repetir el anuncio).
+  const show = (...nodes) => { if (nodes.map((n) => n.outerHTML).join('') !== out.innerHTML) out.replaceChildren(...nodes); };
   const kwh = bad ? 0 : chargeEnergy(bat, soc, obj);
   const hours = kwh / kw;
   const mins = Math.round(hours * 60);
   const msg = bad ? bad[1] : kwh < 0.05 || !(mins > 0) ? 'La carga actual ya llega al objetivo.' : '';
-  if (msg) return out.replaceChildren(el('p', msg));
+  if (msg) return show(el('p', msg));
 
   const prices = S.map((s) => s.price);
   const i0 = Math.max(0, S.findIndex((s) => String(s.t) === f.ini.value));
@@ -378,7 +381,7 @@ function updateCalc() {
   });
   const lbl = el('div', null, 'strip-l muted');
   lbl.append(el('span', live ? 'ahora' : `${S[0].word} ${S[0].hh}`), el('span', `${S.at(-1).word} ${S.at(-1).hh}`));
-  out.replaceChildren(...rows, strip, lbl);
+  show(...rows, strip, lbl);
 }
 
 try {
@@ -417,6 +420,7 @@ async function load() {
     $('retry').hidden = false;
   } finally {
     loading = false;
+    if (reload) { reload = false; load(); }
   }
 }
 
@@ -436,7 +440,8 @@ load();
 function rollover() {
   data = null;
   $('panel').hidden = true;
-  load();
+  if (loading) reload = true;  // como mucho una petición en curso; la siguiente sale al terminar esta
+  else load();
 }
 
 if (!sim) setInterval(() => {
