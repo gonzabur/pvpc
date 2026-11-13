@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.5.0';
+export const VERSION = '1.5.1';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -127,23 +127,29 @@ export function chargeKw(phases, amps, maxKw) {
 // kWh tomados de la red para pasar de socPct a targetPct, con pérdidas de carga (eff).
 export const chargeEnergy = (batKwh, socPct, targetPct, eff = 0.9) => batKwh * (targetPct - socPct) / 100 / eff;
 
-// € (sin impuestos) consumiendo kw durante hours horas desde el tramo start; la última hora parcial cuenta en proporción.
-// null si se sale de los precios disponibles.
 // Tramos horarios que ocupa una carga de hours horas (tolera el error de coma flotante: 15.000000000000002 -> 15).
 export const slotsNeeded = (hours) => Math.ceil(hours - 1e-9);
 
-export function chargeCost(prices, start, hours, kw) {
-  if (!(hours > 0 && kw > 0) || start + slotsNeeded(hours) > prices.length) return null;
-  let cost = 0;
-  for (let i = 0, left = hours; i < slotsNeeded(hours); i++, left--) cost += prices[start + i] * kw * Math.min(1, left);
-  return cost;
+// Tramos que ocupa una carga que empieza en un tramo del que solo queda la fracción f (la hora en curso, "ahora").
+export const chargeSlots = (hours, f = 1) => 1 + Math.max(0, slotsNeeded(hours - f));
+
+// € (sin impuestos) consumiendo kw durante hours horas desde el tramo start; la última hora parcial cuenta en proporción.
+// firstFraction: parte disponible del tramo 0 (0 < f <= 1; la hora en curso). null si se sale de los precios disponibles.
+export function chargeCost(prices, start, hours, kw, firstFraction = 1) {
+  const f = start === 0 ? firstFraction : 1;
+  if (!(hours > 0 && kw > 0 && f > 0)) return null;
+  const need = chargeSlots(hours, f);
+  if (start + need > prices.length) return null;
+  let cost = prices[start] * Math.min(f, hours);
+  for (let i = 1, left = hours - f; i < need; i++, left--) cost += prices[start + i] * Math.min(1, left);
+  return cost * kw;
 }
 
 // Inicio más barato que cabe: { start, cost } (empate -> el más temprano), o null.
-export function cheapestStart(prices, hours, kw) {
+export function cheapestStart(prices, hours, kw, firstFraction = 1) {
   let best = null;
   for (let s = 0; s < prices.length; s++) {
-    const cost = chargeCost(prices, s, hours, kw);
+    const cost = chargeCost(prices, s, hours, kw, firstFraction);
     if (cost !== null && (!best || cost < best.cost - 1e-12)) best = { start: s, cost };
   }
   return best;

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, slotsNeeded, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, slotsNeeded, chargeSlots, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -145,6 +145,21 @@ assert.notEqual(chargeCost(Array(15).fill(0.1), 0, hF, 2.3), null);
 // cheapestStart considera el último inicio válido
 assert.deepEqual(cheapestStart([0.5, 0.5, 0.5, 0.1, 0.1], 2, 1), { start: 3, cost: 0.2 });
 assert.equal(cheapestStart([0.3, 0.2, 0.1], 1, 1).start, 2);
+// hora en curso parcial ("ahora"): 1,5 h con 0,25 disponible del tramo 0 -> 0,25·p0 + 1·p1 + 0,25·p2
+const q = [0.4, 0.2, 0.1, 0.3];
+assert.equal(chargeSlots(1.5, 0.25), 3);
+assert.equal(chargeSlots(hF, 1), 15);                     // sin regresión de coma flotante
+assert.equal(chargeSlots(0.2, 0.25), 1);
+assert.ok(Math.abs(chargeCost(q, 0, 1.5, 2, 0.25) - 2 * (0.4 * 0.25 + 0.2 + 0.1 * 0.25)) < 1e-12);
+assert.ok(Math.abs(chargeCost(q, 1, 1.5, 2, 0.25) - 2 * (0.2 + 0.1 * 0.5)) < 1e-12); // la fracción solo afecta al tramo 0
+assert.ok(Math.abs(chargeCost(q, 0, 0.2, 1, 0.25) - 0.4 * 0.2) < 1e-12);
+assert.notEqual(chargeCost(q, 0, 3.25, 1, 0.25), null);   // 0,25 + 3 horas: cabe justo
+assert.equal(chargeCost(q, 0, 3.3, 1, 0.25), null);
+assert.equal(chargeCost(q, 0, 1, 1, 0), null);
+const cA = cheapestStart([0.05, 0.1, 0.3, 0.3], 1, 1, 0.5); // "ahora": 0,025 + 0,05 = 0,075 frente a 0,1 desde el tramo 1
+assert.equal(cA.start, 0);
+assert.ok(Math.abs(cA.cost - 0.075) < 1e-12);
+assert.equal(cheapestStart([0.5, 0.3, 0.1, 0.1], 1, 1, 0.5).start, 2);
 // horas o potencia no válidas -> null
 for (const [h, k] of [[0, 2], [-1, 2], [NaN, 2], [2, 0], [2, NaN], [Infinity, 2]]) {
   assert.equal(chargeCost(pr, 0, h, k), null);
