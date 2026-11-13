@@ -9,7 +9,8 @@
 :root {
   --bg: #f6f7f9; --card: #fff; --fg: #1b1f24; --muted: #5d6673; --line: #dde1e7;
   --barato: #2e9e5b; --medio: #e0a100; --caro: #d6403a; --now: #1b1f24;
-  --pad: 6px;
+  color-scheme: light dark;
+  --pad: 4px; --lp: 4px; /* relleno lateral de las filas */
   --barato-t: #17703e; --medio-t: #8a6200; --caro-t: #b3261e; /* texto: >= 4.5:1 sobre --card */
 }
 @media (prefers-color-scheme: dark) {
@@ -45,11 +46,16 @@ section { background: var(--card); border: 1px solid var(--line); border-radius:
 .stat { margin-top: 2px; }
 .stat span { display: block; color: var(--muted); }
 .stat b { display: block; white-space: nowrap; }
-ol.bars { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; --vw: 3.8em; }
-ol.bars.approx { --vw: 4.8em; }
-ol.bars li { position: relative; display: grid; grid-template-columns: 3.3em minmax(0, 1fr) var(--vw); gap: 4px; align-items: center; height: 22px; padding: 0 2px 0 4px; border-radius: 6px; font-size: .75rem; white-space: nowrap; }
+a { color: inherit; }
+ol.bars { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; font-size: .75rem; }
+ol.bars li { display: grid; grid-template-columns: 1em auto minmax(0, 1fr) auto; gap: 4px; align-items: center; height: 22px; padding: 0 var(--lp); border-radius: 6px; white-space: nowrap; }
+/* Columnas compartidas por todas las filas de la tarjeta: la del precio mide lo que el precio más ancho, con cualquier fuente; la barra se lleva el resto. */
+@supports (grid-template-columns: subgrid) {
+  ol.bars { display: grid; grid-template-columns: calc(1em + var(--lp)) max-content minmax(0, 1fr) max-content; column-gap: 4px; }
+  ol.bars li { grid-template-columns: subgrid; grid-column: 1 / -1; }
+}
 ol.bars li.now-row { outline: 2px solid var(--now); outline-offset: -2px; background: color-mix(in srgb, var(--now) 8%, transparent); }
-.tri { position: absolute; left: calc(-1px - var(--pad) - .5em); top: 50%; transform: translateY(-50%); width: 1em; text-align: center; font-size: .8125rem; line-height: 1; } /* centrado en el borde izquierdo de la tarjeta */
+.tri { text-align: center; line-height: 1; }
 .t-min { color: var(--barato-t); } .t-max { color: var(--caro-t); }
 .track { height: 12px; }
 .bar { height: 100%; border-radius: 3px; min-width: 2px; background: var(--c); }
@@ -71,15 +77,15 @@ footer { text-align: center; margin-top: 12px; }
   main { padding: 20px 16px; }
   h1 { font-size: 1.5rem; }
   h2 { font-size: 1.3rem; }
-  :root { --pad: 16px; }
+  :root { --pad: 16px; --lp: 6px; }
   section { padding: 16px; }
-  .muted, .sum, ol.bars li { font-size: .9rem; }
+  .muted, .sum, ol.bars { font-size: .9rem; }
   .badge { font-size: .75rem; }
   .hero { margin-bottom: 16px; }
   .cards { column-gap: 16px; }
   .sum { margin: 8px 0 12px; }
-  ol.bars li { height: 28px; gap: 10px; padding: 0 4px 0 6px; }
-  .tri { font-size: .9375rem; }
+  ol.bars { column-gap: 10px; }
+  ol.bars li { height: 28px; gap: 10px; }
   .stat { display: flex; justify-content: space-between; gap: 0 4px; margin: 0; }
   .stat span { display: inline; color: inherit; }
   .track { height: 16px; }
@@ -171,7 +177,7 @@ function dayBlock(title, date, day, nowIdx, approx) {
     stat('Más cara', `${fmtRange(day[s.maxI].hour)} · ${n(s.max)}`),
   );
 
-  const ol = el('ol', null, approx ? 'bars approx' : 'bars');
+  const ol = el('ol', null, 'bars');
   day.forEach((e, i) => {
     const lv = level(e.price, s);
     const li = el('li', null, i === nowIdx ? 'now-row' : '');
@@ -179,9 +185,7 @@ function dayBlock(title, date, day, nowIdx, approx) {
     const bar = el('div', null, 'bar ' + lv);
     bar.style.width = Math.min(100, Math.max(0, s.max > 0 ? e.price / s.max * 100 : 0)) + '%';
     track.append(bar);
-    if (i === s.minI) li.append(el('span', '▼', 'tri t-min'));
-    if (i === s.maxI) li.append(el('span', '▲', 'tri t-max'));
-    li.append(el('span', fmtRange(e.hour)), track, el('span', n(e.price), 'val ' + lv));
+    li.append(el('span', i === s.minI ? '▼' : i === s.maxI ? '▲' : '', 'tri' + (i === s.minI ? ' t-min' : i === s.maxI ? ' t-max' : '')), el('span', fmtRange(e.hour)), track, el('span', n(e.price), 'val ' + lv));
     li.title = `${fmtRange(e.hour)} h: ${n(e.price)} €/kWh (${lv})`;
     ol.append(li);
   });
