@@ -86,6 +86,30 @@ button { font: inherit; cursor: pointer; }
 #info h2 { font-size: 1.1rem; margin-bottom: 10px; }
 #info p { margin-bottom: 10px; font-size: .95rem; line-height: 1.45; }
 #info form { text-align: right; }
+details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.calc summary { min-height: 28px; font-weight: 700; cursor: pointer; }
+.calc .f { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin-top: 8px; font-size: .875rem; }
+.calc input[type=number], .calc select { width: 7.5em; max-width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
+.calc select { width: 11em; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg label { position: relative; min-height: 28px; display: grid; place-items: center; padding: 0 10px; cursor: pointer; }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label:has(input:checked) { background: var(--fg); color: var(--card); font-weight: 700; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--fg); outline-offset: -3px; }
+#calc-kw { margin-top: 6px; }
+.res { display: grid; gap: 6px; margin-top: 10px; font-size: .875rem; }
+.res .r { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; }
+.res b { white-space: nowrap; }
+.res .sub { color: var(--muted); font-size: .75rem; }
+.strip { display: flex; gap: 1px; height: 18px; margin-top: 8px; }
+.strip i { flex: 1; min-width: 0; border-radius: 2px; background: var(--c); opacity: .3; }
+.strip i.best { opacity: 1; }
+.strip i.sel { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg); }
+.strip i.s0 { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg), inset 2px 0 var(--fg); }
+.strip i.s1 { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg), inset -2px 0 var(--fg); }
+.strip i.s0.s1 { box-shadow: inset 0 0 0 2px var(--fg); }
+.strip-l { display: flex; justify-content: space-between; }
 footer { text-align: center; margin-top: 12px; }
 [hidden] { display: none !important; }
 @media (min-width: 700px) {
@@ -127,6 +151,21 @@ footer { text-align: center; margin-top: 12px; }
       <span>peajes 2.0TD:</span><span><i class="sw z-valle"></i>Valle</span><span><i class="sw z-llano"></i>Llano</span><span><i class="sw z-punta"></i>Punta</span>
     </p>
     <p id="nota" class="muted" hidden>Mañana es una estimación a partir del mercado mayorista; el precio oficial se publica sobre las 20:15.</p>
+    <details class="calc">
+      <summary>Calcular carga del coche</summary>
+      <form id="calc">
+        <label class="f"><span>Batería (kWh)</span><input name="bat" type="number" min="10" max="200" step="any" value="60" inputmode="decimal"></label>
+        <label class="f"><span>Carga actual (%)</span><input name="soc" type="number" min="0" max="99" step="any" value="20" inputmode="decimal"></label>
+        <div class="f"><span>Cargar hasta</span><span class="seg"><label><input type="radio" name="obj" value="60">60 %</label><label><input type="radio" name="obj" value="80" checked>80 %</label><label><input type="radio" name="obj" value="100">100 %</label></span></div>
+        <div class="f"><span>Conexión</span><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></div>
+        <label class="f"><span>Intensidad (A)</span><input name="amp" type="number" min="6" max="32" step="any" value="16" inputmode="decimal"></label>
+        <label class="f"><span>Potencia máx. (kW)</span><input name="kwmax" type="number" min="1" max="22" step="0.1" value="7.4" inputmode="decimal"></label>
+        <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
+        <p id="calc-kw" class="muted"></p>
+        <div id="calc-out" class="res" aria-live="polite"></div>
+        <p class="muted" style="margin-top: 8px">Con IVA (21 %) e impuesto eléctrico (5,11 %). Sin término de potencia. Pérdidas de carga del 10 %.</p>
+      </form>
+    </details>
   </div>
   <dialog id="info">
     <div>
@@ -143,7 +182,7 @@ footer { text-align: center; margin-top: 12px; }
   </footer>
 </main>
 <script type="module">
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -229,7 +268,101 @@ function render() {
   $('manana').replaceChildren(dayBlock('Mañana', addDays(loadedDate, 1), dia, -1, !oficial && dia.length > 0));
   $('nota').hidden = oficial || !dia.length;
   $('panel').hidden = false;
+  updateCalc();
 }
+
+// --- Calculadora de carga: datos del coche en localStorage (sin la hora de inicio) ---
+const CAR_KEY = 'pvpc-coche';
+const CAR = ['bat', 'soc', 'obj', 'fase', 'amp', 'kwmax'];
+const dec = (x, n) => x.toFixed(n).replace('.', ',');
+const hhmm = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const dayWord = (t) => ['hoy', 'mañana', 'pasado mañana'][(Date.parse(madridNow(new Date(t)).date) - Date.parse(loadedDate)) / 864e5] ?? '';
+
+// Tramos horarios disponibles: desde la hora actual (o las 00 en simulación) hasta el final de mañana (oficial o estimación).
+function slots() {
+  const out = [];
+  const add = (day, word, est) => {
+    const s = stats(day);
+    for (const e of day) out.push({ price: e.price, t: e.t, word, hh: e.hour + ':00', est, lv: level(e.price, s) });
+  };
+  add(data.today.slice(Math.max(lastIdx, 0)), 'hoy', false);
+  const tom = data.tomorrow.length ? data.tomorrow : data.estimate;
+  if (tom.length) add(tom, 'mañana', !data.tomorrow.length);
+  return out;
+}
+
+function updateCalc() {
+  if (!data) return;
+  const f = $('calc').elements;
+  const S = slots();
+  const prev = f.ini.value;
+  f.ini.replaceChildren(...S.map((s) => {
+    const o = el('option', `${s.word} ${s.hh}${s.est ? ' (estim.)' : ''}`);
+    o.value = s.t;
+    return o;
+  }));
+  if (S.some((s) => String(s.t) === prev)) f.ini.value = prev;
+
+  const num = (k, lo, hi) => { const v = f[k].valueAsNumber; return v >= lo && v <= hi ? v : NaN; };
+  const bat = num('bat', 10, 200), soc = num('soc', 0, 99), amp = num('amp', 6, 32), max = num('kwmax', 1, 22);
+  const obj = Number(f.obj.value), tri = f.fase.value === '3';
+  const { line, kw } = chargeKw(tri ? 3 : 1, amp, max);
+  $('calc-kw').textContent = isNaN(kw) ? '' : `${dec(amp, 0)} A × ${tri ? '400 V × √3' : '230 V'} = ${dec(line, 1)} kW → se carga a ${dec(kw, 1)} kW`;
+  const out = $('calc-out');
+  const msg = [bat, soc, amp, max].some(isNaN) ? 'Revisa los datos: hay un valor vacío o fuera de rango.'
+    : soc >= obj ? 'La carga actual ya llega al objetivo.' : '';
+  if (msg) return out.replaceChildren(el('p', msg));
+
+  const kwh = chargeEnergy(bat, soc, obj);
+  const hours = kwh / kw;
+  const n = Math.ceil(hours);
+  const prices = S.map((s) => s.price);
+  const i0 = Math.max(0, S.findIndex((s) => String(s.t) === f.ini.value));
+  const chosen = chargeCost(prices, i0, hours, kw);
+  const best = cheapestStart(prices, hours, kw);
+  const ap = (i) => (S.slice(i, i + n).some((s) => s.est) ? '≈ ' : '');
+  const eur = (i, c) => ap(i) + dec(c * TAX, 2) + ' €';
+  const at = (i) => `${S[i].hh} (${S[i].word})`;
+  const end = (i) => { const t = S[i].t + hours * 36e5; return `termina a las ${hhmm.format(t)} (${dayWord(t)})`; };
+  const row = (label, value, sub) => {
+    const d = el('div');
+    const r = el('div', null, 'r');
+    r.append(el('span', label), el('b', value));
+    d.append(r);
+    if (sub) d.append(el('p', sub, 'sub'));
+    return d;
+  };
+  const noFit = `No da tiempo antes de que acaben los precios disponibles (fin de ${S.at(-1).word})`;
+  const rows = [row('Energía de la red', dec(kwh, 1) + ' kWh'), row('Tiempo de carga', fmtDuration(hours))];
+  rows.push(chosen === null ? el('p', noFit) : row(`Empezando a las ${at(i0)}`, eur(i0, chosen), end(i0)));
+  if (best && chosen !== null) {
+    const save = (chosen - best.cost) * TAX;
+    rows.push(row(`Más barato: empezar a las ${at(best.start)}`, eur(best.start, best.cost),
+      end(best.start) + (save >= 0.005 ? ` · ahorras ${ap(i0) || ap(best.start)}${dec(save, 2)} €` : '')));
+  } else if (best) {
+    rows.push(row(`Más barato: empezar a las ${at(best.start)}`, eur(best.start, best.cost), end(best.start)));
+  }
+  const strip = el('div', null, 'strip');
+  strip.setAttribute('aria-hidden', 'true');
+  S.forEach((s, i) => {
+    const inBest = best && i >= best.start && i < best.start + n;
+    const inSel = chosen !== null && i >= i0 && i < i0 + n;
+    strip.append(el('i', null, `${s.lv}${inBest ? ' best' : ''}${inSel ? ' sel' : ''}${inSel && i === i0 ? ' s0' : ''}${inSel && i === i0 + n - 1 ? ' s1' : ''}`));
+  });
+  const lbl = el('div', null, 'strip-l muted');
+  lbl.append(el('span', `${S[0].word} ${S[0].hh}`), el('span', `${S.at(-1).word} ${S.at(-1).hh}`));
+  out.replaceChildren(...rows, strip, lbl);
+}
+
+try {
+  const car = JSON.parse(localStorage.getItem(CAR_KEY));
+  for (const k of CAR) if (car?.[k] != null) $('calc').elements[k].value = car[k];
+} catch {}  // almacenamiento bloqueado o dato corrupto: valores por defecto
+$('calc').onsubmit = (e) => e.preventDefault();
+$('calc').oninput = () => {
+  try { localStorage.setItem(CAR_KEY, JSON.stringify(Object.fromEntries(CAR.map((k) => [k, $('calc').elements[k].value])))); } catch {}
+  updateCalc();
+};
 
 async function load() {
   if (loading) return;

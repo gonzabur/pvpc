@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.4.0';
+export const VERSION = '1.5.0';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -111,4 +111,43 @@ export function period(ymd, hour) {
   if (dow === 0 || dow === 6 || FESTIVOS.includes(ymd.slice(5))) return 'valle';
   const h = Number(hour);
   return h < 8 ? 'valle' : (h >= 10 && h < 14) || (h >= 18 && h < 22) ? 'punta' : 'llano';
+}
+
+// --- Calculadora de carga del coche ---
+// ponytail: IEE 5,11269632 % y luego IVA 21 %; ignora el mínimo del IEE por MWh y el término de potencia.
+// Los tipos cambian por ley: actualizar aquí.
+export const TAX = 1.0511269632 * 1.21;
+
+// Potencia de la línea (kW) y la que realmente se usa (limitada por el máximo del coche/cargador). phases: 1 | 3.
+export function chargeKw(phases, amps, maxKw) {
+  const line = (phases === 3 ? 400 * Math.sqrt(3) : 230) * amps / 1000;
+  return { line, kw: Math.min(line, maxKw) };
+}
+
+// kWh tomados de la red para pasar de socPct a targetPct, con pérdidas de carga (eff).
+export const chargeEnergy = (batKwh, socPct, targetPct, eff = 0.9) => batKwh * (targetPct - socPct) / 100 / eff;
+
+// € (sin impuestos) consumiendo kw durante hours horas desde el tramo start; la última hora parcial cuenta en proporción.
+// null si se sale de los precios disponibles.
+export function chargeCost(prices, start, hours, kw) {
+  if (start + Math.ceil(hours) > prices.length) return null;
+  let cost = 0;
+  for (let i = 0, left = hours; left > 0; i++, left--) cost += prices[start + i] * kw * Math.min(1, left);
+  return cost;
+}
+
+// Inicio más barato que cabe: { start, cost } (empate -> el más temprano), o null.
+export function cheapestStart(prices, hours, kw) {
+  let best = null;
+  for (let s = 0; s < prices.length; s++) {
+    const cost = chargeCost(prices, s, hours, kw);
+    if (cost !== null && (!best || cost < best.cost - 1e-12)) best = { start: s, cost };
+  }
+  return best;
+}
+
+// 3.9 -> '3 h 54 min'; 0.5 -> '30 min'
+export function fmtDuration(hours) {
+  const m = Math.round(hours * 60);
+  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
 }

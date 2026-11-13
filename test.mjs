@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -116,5 +116,25 @@ for (const tz of ['Pacific/Kiritimati', 'America/Los_Angeles']) {
   assert.equal(period('2026-11-13', 12), 'punta');
 }
 delete process.env.TZ;
+
+// calculadora de carga
+const r2 = (x) => Math.round(x * 100) / 100;
+assert.equal(r2(chargeKw(1, 16, 22).line), 3.68);
+assert.equal(r2(chargeKw(1, 16, 22).kw), 3.68);
+assert.equal(r2(chargeKw(3, 16, 22).kw), 11.09);
+assert.equal(chargeKw(3, 16, 11).kw, 11);                 // limitada por la potencia máxima
+assert.equal(chargeKw(1, 32, 7).kw, 7);
+assert.ok(Math.abs(chargeEnergy(60, 20, 80, 1) - 36) < 1e-9);
+assert.ok(Math.abs(chargeEnergy(60, 20, 80) - 40) < 1e-9); // 36 kWh / 0,9
+const pr = [0.30, 0.10, 0.10, 0.20, 0.10, 0.10, 0.40];
+assert.ok(Math.abs(chargeCost(pr, 1, 2.5, 2) - (0.10 * 2 + 0.10 * 2 + 0.20 * 2 * 0.5)) < 1e-12); // hora parcial
+assert.equal(chargeCost(pr, 5, 2.5, 2), null);            // no cabe
+assert.ok(Math.abs(chargeCost(pr, 4, 3, 1) - 0.60) < 1e-12);
+assert.deepEqual(cheapestStart(pr, 2, 1), { start: 1, cost: 0.2 }); // empate 1-2 y 4-5 -> el primero
+assert.equal(cheapestStart(pr, 2.5, 1).start, 1);         // 0,25 frente a 0,40 (desde 4)
+assert.equal(cheapestStart(pr, 8, 1), null);
+assert.ok(Math.abs(TAX - 1.27186363) < 1e-8);
+assert.equal(fmtDuration(3.9), '3 h 54 min');
+assert.equal(fmtDuration(0.5), '30 min');
 
 console.log('OK: todas las comprobaciones pasan');
