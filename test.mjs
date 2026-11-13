@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, slotsNeeded, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -136,5 +136,19 @@ assert.equal(cheapestStart(pr, 8, 1), null);
 assert.ok(Math.abs(TAX - 1.27186363) < 1e-8);
 assert.equal(fmtDuration(3.9), '3 h 54 min');
 assert.equal(fmtDuration(0.5), '30 min');
+assert.equal(fmtDuration(1), '1 h 0 min');
+// coma flotante: 69 kWh 35->80 % a 10 A monofásica = 15.000000000000002 h -> 15 tramos y cabe justo
+const hF = chargeEnergy(69, 35, 80) / chargeKw(1, 10, 22).kw;
+assert.ok(hF > 15 && hF < 15 + 1e-9);
+assert.equal(slotsNeeded(hF), 15);
+assert.notEqual(chargeCost(Array(15).fill(0.1), 0, hF, 2.3), null);
+// cheapestStart considera el último inicio válido
+assert.deepEqual(cheapestStart([0.5, 0.5, 0.5, 0.1, 0.1], 2, 1), { start: 3, cost: 0.2 });
+assert.equal(cheapestStart([0.3, 0.2, 0.1], 1, 1).start, 2);
+// horas o potencia no válidas -> null
+for (const [h, k] of [[0, 2], [-1, 2], [NaN, 2], [2, 0], [2, NaN], [Infinity, 2]]) {
+  assert.equal(chargeCost(pr, 0, h, k), null);
+  assert.equal(cheapestStart(pr, h, k), null);
+}
 
 console.log('OK: todas las comprobaciones pasan');

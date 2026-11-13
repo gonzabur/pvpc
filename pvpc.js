@@ -129,10 +129,13 @@ export const chargeEnergy = (batKwh, socPct, targetPct, eff = 0.9) => batKwh * (
 
 // € (sin impuestos) consumiendo kw durante hours horas desde el tramo start; la última hora parcial cuenta en proporción.
 // null si se sale de los precios disponibles.
+// Tramos horarios que ocupa una carga de hours horas (tolera el error de coma flotante: 15.000000000000002 -> 15).
+export const slotsNeeded = (hours) => Math.ceil(hours - 1e-9);
+
 export function chargeCost(prices, start, hours, kw) {
-  if (start + Math.ceil(hours) > prices.length) return null;
+  if (!(hours > 0 && kw > 0) || start + slotsNeeded(hours) > prices.length) return null;
   let cost = 0;
-  for (let i = 0, left = hours; left > 0; i++, left--) cost += prices[start + i] * kw * Math.min(1, left);
+  for (let i = 0, left = hours; i < slotsNeeded(hours); i++, left--) cost += prices[start + i] * kw * Math.min(1, left);
   return cost;
 }
 

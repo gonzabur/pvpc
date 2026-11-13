@@ -91,6 +91,8 @@ details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); bo
 .calc .f { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin-top: 8px; font-size: .875rem; }
 .calc input[type=number], .calc select { width: 7.5em; max-width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
 .calc select { width: 11em; }
+fieldset.f { border: 0; margin: 8px 0 0; padding: 0; min-width: 0; }
+fieldset.f legend { float: left; padding: 0; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg label { position: relative; min-height: 28px; display: grid; place-items: center; padding: 0 10px; cursor: pointer; }
 .seg label + label { border-left: 1px solid var(--line); }
@@ -156,8 +158,8 @@ footer { text-align: center; margin-top: 12px; }
       <form id="calc">
         <label class="f"><span>Batería (kWh)</span><input name="bat" type="number" min="10" max="200" step="any" value="60" inputmode="decimal"></label>
         <label class="f"><span>Carga actual (%)</span><input name="soc" type="number" min="0" max="99" step="any" value="20" inputmode="decimal"></label>
-        <div class="f"><span>Cargar hasta</span><span class="seg"><label><input type="radio" name="obj" value="60">60 %</label><label><input type="radio" name="obj" value="80" checked>80 %</label><label><input type="radio" name="obj" value="100">100 %</label></span></div>
-        <div class="f"><span>Conexión</span><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></div>
+        <fieldset class="f"><legend>Cargar hasta</legend><span class="seg"><label><input type="radio" name="obj" value="60">60 %</label><label><input type="radio" name="obj" value="80" checked>80 %</label><label><input type="radio" name="obj" value="100">100 %</label></span></fieldset>
+        <fieldset class="f"><legend>Conexión</legend><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></fieldset>
         <label class="f"><span>Intensidad (A)</span><input name="amp" type="number" min="6" max="32" step="any" value="16" inputmode="decimal"></label>
         <label class="f"><span>Potencia máx. (kW)</span><input name="kwmax" type="number" min="1" max="22" step="0.1" value="7.4" inputmode="decimal"></label>
         <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
@@ -182,7 +184,7 @@ footer { text-align: center; margin-top: 12px; }
   </footer>
 </main>
 <script type="module">
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, slotsNeeded } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -281,13 +283,18 @@ const dayWord = (t) => ['hoy', 'mañana', 'pasado mañana'][(Date.parse(madridNo
 // Tramos horarios disponibles: desde la hora actual (o las 00 en simulación) hasta el final de mañana (oficial o estimación).
 function slots() {
   const out = [];
-  const add = (day, word, est) => {
+  // Niveles con las estadísticas del día completo (iguales que en las tarjetas); en el día de 25 h la 02 repetida es "(2ª)".
+  const add = (day, from, word, est) => {
     const s = stats(day);
-    for (const e of day) out.push({ price: e.price, t: e.t, word, hh: e.hour + ':00', est, lv: level(e.price, s) });
+    day.forEach((e, i) => {
+      if (i < from) return;
+      const hh = e.hour + ':00' + (day.slice(0, i).some((x) => x.hour === e.hour) ? ' (2ª)' : '');
+      out.push({ price: e.price, t: e.t, word, hh, est, lv: level(e.price, s) });
+    });
   };
-  add(data.today.slice(Math.max(lastIdx, 0)), 'hoy', false);
+  add(data.today, sim ? 0 : Math.max(lastIdx, 0), 'hoy', false);
   const tom = data.tomorrow.length ? data.tomorrow : data.estimate;
-  if (tom.length) add(tom, 'mañana', !data.tomorrow.length);
+  if (tom.length) add(tom, 0, 'mañana', !data.tomorrow.length);
   return out;
 }
 
@@ -305,17 +312,18 @@ function updateCalc() {
 
   const num = (k, lo, hi) => { const v = f[k].valueAsNumber; return v >= lo && v <= hi ? v : NaN; };
   const bat = num('bat', 10, 200), soc = num('soc', 0, 99), amp = num('amp', 6, 32), max = num('kwmax', 1, 22);
+  const bad = [[bat, 'Batería: entre 10 y 200 kWh'], [soc, 'Carga actual: entre 0 y 99 %'], [amp, 'Intensidad: entre 6 y 32 A'], [max, 'Potencia máx.: entre 1 y 22 kW']]
+    .find(([v]) => isNaN(v));
   const obj = Number(f.obj.value), tri = f.fase.value === '3';
   const { line, kw } = chargeKw(tri ? 3 : 1, amp, max);
-  $('calc-kw').textContent = isNaN(kw) ? '' : `${dec(amp, 0)} A × ${tri ? '400 V × √3' : '230 V'} = ${dec(line, 1)} kW → se carga a ${dec(kw, 1)} kW`;
+  $('calc-kw').textContent = isNaN(kw) ? '' : `${String(amp).replace('.', ',')} A × ${tri ? '400 V × √3' : '230 V'} = ${dec(line, 1)} kW → se carga a ${dec(kw, 1)} kW`;
   const out = $('calc-out');
-  const msg = [bat, soc, amp, max].some(isNaN) ? 'Revisa los datos: hay un valor vacío o fuera de rango.'
-    : soc >= obj ? 'La carga actual ya llega al objetivo.' : '';
+  const kwh = bad ? 0 : chargeEnergy(bat, soc, obj);
+  const msg = bad ? bad[1] : kwh < 0.05 ? 'La carga actual ya llega al objetivo.' : '';
   if (msg) return out.replaceChildren(el('p', msg));
 
-  const kwh = chargeEnergy(bat, soc, obj);
   const hours = kwh / kw;
-  const n = Math.ceil(hours);
+  const n = slotsNeeded(hours);
   const prices = S.map((s) => s.price);
   const i0 = Math.max(0, S.findIndex((s) => String(s.t) === f.ini.value));
   const chosen = chargeCost(prices, i0, hours, kw);
@@ -323,7 +331,7 @@ function updateCalc() {
   const ap = (i) => (S.slice(i, i + n).some((s) => s.est) ? '≈ ' : '');
   const eur = (i, c) => ap(i) + dec(c * TAX, 2) + ' €';
   const at = (i) => `${S[i].hh} (${S[i].word})`;
-  const end = (i) => { const t = S[i].t + hours * 36e5; return `termina a las ${hhmm.format(t)} (${dayWord(t)})`; };
+  const end = (i) => { const t = S[i].t + Math.round(hours * 60) * 60e3; /* mismos minutos redondeados que la duración */ return `termina a las ${hhmm.format(t)} (${dayWord(t)})`; };
   const row = (label, value, sub) => {
     const d = el('div');
     const r = el('div', null, 'r');
