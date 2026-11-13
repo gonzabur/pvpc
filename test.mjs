@@ -156,7 +156,10 @@ assert.ok(Math.abs(chargeCost(q, 0, 0.2, 1, 0.25) - 0.4 * 0.2) < 1e-12);
 assert.notEqual(chargeCost(q, 0, 3.25, 1, 0.25), null);   // 0,25 + 3 horas: cabe justo
 assert.equal(chargeCost(q, 0, 3.3, 1, 0.25), null);
 assert.equal(chargeCost(q, 0, 1, 1, 0), null);
-for (const bad of [0, -0.5, NaN]) assert.equal(cheapestStart(q, 1, 1, bad), null); // fracción no válida -> null
+for (const bad of [0, -0.5, NaN]) {  // fracción no válida -> null
+  assert.equal(chargeCost(q, 0, 1, 1, bad), null);
+  assert.equal(cheapestStart(q, 1, 1, bad), null);
+}
 const cA = cheapestStart([0.05, 0.1, 0.3, 0.3], 1, 1, 0.5); // "ahora": 0,025 + 0,05 = 0,075 frente a 0,1 desde el tramo 1
 assert.equal(cA.start, 0);
 assert.ok(Math.abs(cA.cost - 0.075) < 1e-12);

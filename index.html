@@ -300,7 +300,9 @@ function slots() {
 
 function updateCalc() {
   if (!data) return;
-  // Los tramos salen siempre de la hora real: si ya cambió desde el último render, se repinta todo (render llama aquí).
+  // Los tramos salen siempre de la hora real: si cambió el día se recargan los datos (como el ciclo de 30 s);
+  // si solo cambió la hora, se repinta todo (render vuelve a llamar aquí).
+  if (!sim && madridNow().date !== loadedDate) return rollover();
   if (!sim && currentIndex(data.today, Date.now()) !== lastIdx) return render();
   const f = $('calc').elements;
   const S = slots();
@@ -308,7 +310,7 @@ function updateCalc() {
   const nowMs = Date.now();
   const live = !sim && lastIdx >= 0 && nowMs >= S[0].t && nowMs < S[0].t + 36e5;
   const frac = live ? (S[0].t + 36e5 - nowMs) / 36e5 : 1;
-  const nowLabel = `${hhmm.format(nowMs)}${live && S[0].hh.includes('(2ª)') ? ' (2ª)' : ''}`;
+  const nowLabel = `${hhmm.format(nowMs)}${live && S[0].hh.includes('(2ª)') ? ', 2ª' : ''}`;
   const prev = f.ini.value;
   const opts = S.map((s, i) => [String(s.t), live && i === 0 ? `Ahora (${nowLabel})` : `${s.word} ${s.hh}${s.est ? ' (estim.)' : ''}`]);
   // Mismos tramos: solo se actualizan los textos (no se toca la selección ni el foco); si no, se reconstruye la lista.
@@ -384,6 +386,7 @@ try {
   for (const k of CAR) if (car?.[k] != null) $('calc').elements[k].value = car[k];
 } catch {}  // almacenamiento bloqueado o dato corrupto: valores por defecto
 $('calc').onsubmit = (e) => e.preventDefault();
+$('calc').elements.ini.onfocus = $('calc').elements.ini.onpointerdown = () => updateCalc();  // lista al día al abrirla
 $('calc').oninput = () => {
   try { localStorage.setItem(CAR_KEY, JSON.stringify(Object.fromEntries(CAR.map((k) => [k, $('calc').elements[k].value])))); } catch {}
   updateCalc();
@@ -429,9 +432,16 @@ $('retry').onclick = load;
 $('info').onclick = (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); };  // clic en el fondo
 load();
 
+// Cambio de día: se descartan los datos (no se calcula con los de ayer) y se recarga. load() ignora llamadas en curso.
+function rollover() {
+  data = null;
+  $('panel').hidden = true;
+  load();
+}
+
 if (!sim) setInterval(() => {
   const { date, hour } = madridNow();
-  if (date !== loadedDate) { data = null; $('panel').hidden = true; load(); }
+  if (date !== loadedDate) rollover();
   else if (!data) return;
   else if (!data.tomorrow.length && Date.now() - lastFetch >= 10 * 60e3 && (hour >= 20 || (hour >= 13 && !data.estimate.length))) load();
   else if (currentIndex(data.today, Date.now()) !== lastIdx) render();
