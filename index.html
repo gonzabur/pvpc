@@ -300,19 +300,24 @@ function slots() {
 
 function updateCalc() {
   if (!data) return;
+  // Los tramos salen siempre de la hora real: si ya cambió desde el último render, se repinta todo (render llama aquí).
+  if (!sim && currentIndex(data.today, Date.now()) !== lastIdx) return render();
   const f = $('calc').elements;
   const S = slots();
   // Modo normal: el primer tramo es la hora en curso, disponible solo desde ahora (fracción frac).
   const nowMs = Date.now();
   const live = !sim && lastIdx >= 0 && nowMs >= S[0].t && nowMs < S[0].t + 36e5;
   const frac = live ? (S[0].t + 36e5 - nowMs) / 36e5 : 1;
+  const nowLabel = `${hhmm.format(nowMs)}${live && S[0].hh.includes('(2ª)') ? ' (2ª)' : ''}`;
   const prev = f.ini.value;
-  f.ini.replaceChildren(...S.map((s, i) => {
-    const o = el('option', live && i === 0 ? `Ahora (${hhmm.format(nowMs)})` : `${s.word} ${s.hh}${s.est ? ' (estim.)' : ''}`);
-    o.value = s.t;
-    return o;
-  }));
-  if (S.some((s) => String(s.t) === prev)) f.ini.value = prev;
+  const opts = S.map((s, i) => [String(s.t), live && i === 0 ? `Ahora (${nowLabel})` : `${s.word} ${s.hh}${s.est ? ' (estim.)' : ''}`]);
+  // Mismos tramos: solo se actualizan los textos (no se toca la selección ni el foco); si no, se reconstruye la lista.
+  if (opts.length === f.ini.options.length && opts.every(([v], i) => f.ini.options[i].value === v)) {
+    opts.forEach(([, t], i) => { if (f.ini.options[i].textContent !== t) f.ini.options[i].textContent = t; });
+  } else {
+    f.ini.replaceChildren(...opts.map(([v, t]) => { const o = el('option', t); o.value = v; return o; }));
+    if (opts.some(([v]) => v === prev)) f.ini.value = prev;
+  }
 
   const num = (k, lo, hi) => { const v = f[k].valueAsNumber; return v >= lo && v <= hi ? v : NaN; };
   const bat = num('bat', 10, 200), soc = num('soc', 0, 99), amp = num('amp', 6, 32), max = num('kwmax', 1, 22);
@@ -336,7 +341,7 @@ function updateCalc() {
   const ap = (i) => (S.slice(i, i + span(i)).some((s) => s.est) ? '≈ ' : '');
   const cents = (c) => Math.round(c * TAX * 100);
   const eur = (i, c) => ap(i) + dec(cents(c) / 100, 2) + ' €';
-  const at = (i) => (live && i === 0 ? `ahora (${hhmm.format(nowMs)})` : `a las ${S[i].hh} (${S[i].word})`);
+  const at = (i) => (live && i === 0 ? `ahora (${nowLabel})` : `a las ${S[i].hh} (${S[i].word})`);
   // Fin = inicio real + los mismos minutos redondeados que la duración; la etiqueta sale del tramo que contiene ese instante.
   const end = (i) => {
     const t = (live && i === 0 ? nowMs : S[i].t) + mins * 60e3;
@@ -430,6 +435,7 @@ if (!sim) setInterval(() => {
   else if (!data) return;
   else if (!data.tomorrow.length && Date.now() - lastFetch >= 10 * 60e3 && (hour >= 20 || (hour >= 13 && !data.estimate.length))) load();
   else if (currentIndex(data.today, Date.now()) !== lastIdx) render();
+  else updateCalc();  // "Ahora": coste y hora de fin al minuto
 }, 30e3);
 </script>
 </body>

@@ -147,6 +147,7 @@ export function chargeCost(prices, start, hours, kw, firstFraction = 1) {
 
 // Inicio más barato que cabe: { start, cost } (empate -> el más temprano), o null.
 export function cheapestStart(prices, hours, kw, firstFraction = 1) {
+  if (!(firstFraction > 0)) return null;
   let best = null;
   for (let s = 0; s < prices.length; s++) {
     const cost = chargeCost(prices, s, hours, kw, firstFraction);
