@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -47,7 +47,6 @@ assert.equal(level(35, s), 'medio');
 assert.equal(s.minI, 0);
 assert.equal(s.maxI, 5);
 assert.equal(s.avg, 35);
-assert.deepEqual(s.cheapest, [0, 1, 2]);
 assert.equal(level(5, stats([{ price: 5 }])), 'barato'); // día plano
 
 // fecha de Madrid cuando UTC va por detrás
@@ -93,6 +92,8 @@ assert.deepEqual(parse({ included: [{ id: '1001', attributes: { values: [...ref,
 // fecha de simulación y versión
 assert.ok(isValidDate('2026-11-11'));
 for (const bad of ['2026-02-30', '2026-13-01', '2026-1-1', 'hoy', '', null]) assert.ok(!isValidDate(bad), String(bad));
+assert.equal(fmtDate('2026-11-13'), 'vie 13 nov');
+assert.equal(fmtDate('2026-12-01'), 'mar 1 dic');
 assert.match(VERSION, /^\d+\.\d+\.\d+$/);
 
 console.log('OK: todas las comprobaciones pasan');

@@ -18,30 +18,49 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
-main { max-width: 760px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.3rem; margin: 0 0 12px; }
-h2 { font-size: 1.1rem; margin: 0 0 8px; }
-section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-.now { font-size: clamp(1.9rem, 9vw, 2.8rem); font-weight: 700; margin: 0; }
-.muted { color: var(--muted); font-size: .9rem; }
-.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0; }
-.dot { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: 4px; }
-ol.bars { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; }
-ol.bars li { display: grid; grid-template-columns: 2.2em 1fr 6.6em; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 6px; font-size: .85rem; }
-ol.bars li.now-row { outline: 2px solid var(--now); background: color-mix(in srgb, var(--now) 8%, transparent); font-weight: 700; }
-.track { height: 14px; }
-.bar { height: 100%; border-radius: 3px; min-width: 2px; }
-.barato { background: var(--barato); } .medio { background: var(--medio); } .caro { background: var(--caro); }
-.val { text-align: right; white-space: nowrap; }
-.tag { display: block; font-size: .75rem; font-weight: 700; grid-column: 2 / 4; }
-dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 12px 0 0; }
-dt { color: var(--muted); } dd { margin: 0; font-weight: 600; }
-h3 { font-size: .95rem; margin: 12px 0 4px; }
-ul.top3 { margin: 0; padding-left: 1.2em; }
-#estado { text-align: center; }
+main { max-width: 1000px; margin: 0 auto; padding: 12px 10px; }
+h1 { font-size: 1.2rem; margin: 0 0 10px; }
+h2 { font-size: 1rem; margin: 0; }
+p { margin: 0; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 6px; }
+.muted { color: var(--muted); font-size: .75rem; }
+.barato { --c: var(--barato); } .medio { --c: var(--medio); } .caro { --c: var(--caro); }
+.hero { margin-bottom: 8px; padding: 12px; }
+.hero .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.now { font-size: clamp(1.8rem, 9vw, 2.6rem); font-weight: 700; line-height: 1.2; }
+.badge { border: 1px solid var(--c, var(--muted)); border-radius: 999px; padding: 0 6px; font-size: .6875rem; font-weight: 700; white-space: nowrap; }
+.hero .badge { border-width: 2px; font-size: 1rem; padding: 1px 12px; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.title { display: flex; align-items: center; gap: 6px; height: 24px; }
+.sum { margin: 6px 0 8px; font-size: .75rem; }
+.stat { display: flex; justify-content: space-between; gap: 4px; height: 18px; white-space: nowrap; }
+ol.bars { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; --vw: 3.8em; }
+ol.bars.approx { --vw: 5em; }
+ol.bars li { display: grid; grid-template-columns: 2.5em minmax(0, 1fr) var(--vw); gap: 6px; align-items: center; height: 22px; padding: 0 2px; border-radius: 6px; font-size: .75rem; white-space: nowrap; }
+ol.bars li.now-row { outline: 2px solid var(--now); outline-offset: -2px; background: color-mix(in srgb, var(--now) 8%, transparent); }
+.track { height: 12px; }
+.bar { height: 100%; border-radius: 3px; min-width: 2px; background: var(--c); }
+.val { text-align: right; }
+.legend { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 8px 0 4px; }
+.dot { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: 4px; background: var(--c); }
+#estado { text-align: center; padding: 16px; }
 button { font: inherit; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
-footer { text-align: center; }
+footer { text-align: center; margin-top: 12px; }
 [hidden] { display: none !important; }
+@media (min-width: 700px) {
+  main { padding: 20px 16px; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.3rem; }
+  section { padding: 16px; }
+  .muted, .sum, ol.bars li { font-size: .9rem; }
+  .badge { font-size: .75rem; }
+  .hero { margin-bottom: 16px; }
+  .cards { gap: 16px; }
+  .sum { margin: 8px 0 12px; }
+  .stat { height: 22px; }
+  ol.bars li { height: 28px; gap: 10px; }
+  .track { height: 16px; }
+}
 </style>
 </head>
 <body>
@@ -52,14 +71,24 @@ footer { text-align: center; }
     <p id="msg">Cargando precios…</p>
     <button id="retry" hidden>Reintentar</button>
   </section>
-  <section id="hoy" hidden></section>
-  <section id="manana" hidden></section>
+  <div id="panel" hidden>
+    <section id="ahora" class="hero" hidden></section>
+    <div class="cards">
+      <section id="hoy"></section>
+      <section id="manana"></section>
+    </div>
+    <p class="legend muted">
+      <span><i class="dot barato"></i>barato</span><span><i class="dot medio"></i>medio</span><span><i class="dot caro"></i>caro</span>
+      <span>▼ más barata</span><span>▲ más cara</span>
+    </p>
+    <p id="nota" class="muted" hidden>Estimación a partir del mercado mayorista. Orienta sobre las horas baratas y caras; el precio exacto puede variar. Los precios oficiales se publican sobre las 20:15.</p>
+  </div>
   <footer class="muted">
     <p>Datos: REE (apidatos.ree.es) · Actualizado: <span id="updated">—</span> · <span id="version"></span></p>
   </footer>
 </main>
 <script type="module">
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -68,37 +97,41 @@ const el = (tag, text, cls) => {
   if (cls) e.className = cls;
   return e;
 };
-const hh = (e) => `${e.hour}:00`;
-const LABEL = { barato: 'barato', medio: 'medio', caro: 'caro' };
-
 const fecha = new URLSearchParams(location.search).get('fecha');
 const sim = isValidDate(fecha) ? fecha : null;  // ?fecha=AAAA-MM-DD: simulación con esa fecha como "hoy"
-let data = null;          // { today, tomorrow }
+let data = null;          // { today, tomorrow, estimate }
 let loadedDate = null;    // fecha de Madrid con la que se cargó
 let lastFetch = 0;
 let lastIdx = -1;         // índice de la hora vigente en el último render
 let loading = false;
 
-function dayBlock(title, day, nowIdx, approx) {
-  const s = stats(day);
-  const f = (p) => (approx ? '≈ ' : '') + fmt(p);
-  const n = (p) => (approx ? '≈ ' : '') + fmtNum(p);
+// Tarjeta de un día: cabecera, resumen y una fila fija por hora. approx: precios estimados ("≈ ").
+function dayBlock(title, date, day, nowIdx, approx) {
   const frag = document.createDocumentFragment();
-  frag.append(el('h2', title));
-  if (nowIdx >= 0) {
-    frag.append(el('p', 'Precio ahora (' + hh(day[nowIdx]) + ')', 'muted'));
-    frag.append(el('p', f(day[nowIdx].price), 'now'));
+  const head = el('div', null, 'title');
+  head.append(el('h2', title));
+  if (approx) head.append(el('span', 'estimación', 'badge'));
+  frag.append(head, el('p', fmtDate(date) + (day.length ? ' · €/kWh' : ''), 'muted'));
+  if (!day.length) {
+    frag.append(el('p', 'Los precios de mañana se publican sobre las 20:15'));
+    return frag;
   }
-  const legend = el('div', null, 'legend muted');
-  for (const k of ['barato', 'medio', 'caro']) {
-    const l = el('span', LABEL[k]);
-    const d = el('span', null, 'dot ' + k);
-    l.prepend(d);
-    legend.append(l);
-  }
-  frag.append(legend);
 
-  const ol = el('ol', null, 'bars');
+  const s = stats(day);
+  const n = (p) => (approx ? '≈ ' : '') + fmtNum(p);
+  const stat = (label, value) => {
+    const d = el('div', null, 'stat');
+    d.append(el('span', label), el('b', value));
+    return d;
+  };
+  const sum = el('div', null, 'sum');
+  sum.append(
+    stat('Media', n(s.avg)),
+    stat('Más barata', `${day[s.minI].hour}h ${n(s.min)}`),
+    stat('Más cara', `${day[s.maxI].hour}h ${n(s.max)}`),
+  );
+
+  const ol = el('ol', null, approx ? 'bars approx' : 'bars');
   day.forEach((e, i) => {
     const lv = level(e.price, s);
     const li = el('li', null, i === nowIdx ? 'now-row' : '');
@@ -106,23 +139,11 @@ function dayBlock(title, day, nowIdx, approx) {
     const bar = el('div', null, 'bar ' + lv);
     bar.style.width = Math.min(100, Math.max(0, s.max > 0 ? e.price / s.max * 100 : 0)) + '%';
     track.append(bar);
-    li.append(el('span', e.hour), track, el('span', n(e.price), 'val'));
-    if (i === nowIdx) li.append(el('span', '◀ ahora', 'tag'));
-    if (i === s.minI) li.append(el('span', '▼ más barata', 'tag'));
-    if (i === s.maxI) li.append(el('span', '▲ más cara', 'tag'));
-    li.title = `${hh(e)}: ${f(e.price)} (${lv})`;
+    li.append(el('span', e.hour + (i === s.minI ? '▼' : i === s.maxI ? '▲' : '')), track, el('span', n(e.price), 'val'));
+    li.title = `${e.hour}:00: ${n(e.price)} €/kWh (${lv})`;
     ol.append(li);
   });
-  frag.append(ol);
-
-  const dl = el('dl');
-  dl.append(el('dt', 'Mínimo'), el('dd', `${f(s.min)} · ${hh(day[s.minI])}`));
-  dl.append(el('dt', 'Máximo'), el('dd', `${f(s.max)} · ${hh(day[s.maxI])}`));
-  dl.append(el('dt', 'Media'), el('dd', f(s.avg)));
-  frag.append(dl, el('h3', '3 horas más baratas'));
-  const ul = el('ul', null, 'top3');
-  for (const i of s.cheapest) ul.append(el('li', `${hh(day[i])} · ${f(day[i].price)}`));
-  frag.append(ul);
+  frag.append(sum, ol);
   return frag;
 }
 
@@ -130,19 +151,21 @@ function render() {
   const now = new Date();
   lastIdx = currentIndex(data.today, now.getTime());
   $('estado').hidden = true;
-  const hoy = $('hoy');
-  hoy.replaceChildren(dayBlock('Hoy', data.today, lastIdx));
-  hoy.hidden = false;
-  const man = $('manana');
+  const hero = $('ahora');
+  hero.hidden = lastIdx < 0;
+  if (lastIdx >= 0) {
+    const e = data.today[lastIdx];
+    const lv = level(e.price, stats(data.today));
+    const row = el('div', null, 'row');
+    row.append(el('p', fmt(e.price), 'now'), el('span', lv[0].toUpperCase() + lv.slice(1), 'badge ' + lv));
+    hero.replaceChildren(el('p', `Ahora · ${Number(e.hour)}–${Number(e.hour) + 1} h`, 'muted'), row);
+  }
   const oficial = data.tomorrow.length > 0;
   const dia = oficial ? data.tomorrow : data.estimate;
-  if (dia.length) {
-    man.replaceChildren(dayBlock(oficial ? 'Mañana' : 'Mañana · estimación', dia, -1, !oficial));
-    if (!oficial) man.firstChild.after(el('p', 'Estimación a partir del mercado mayorista. Orienta sobre las horas baratas y caras; el precio exacto puede variar. Los precios oficiales se publican sobre las 20:15.', 'muted'));
-  } else {
-    man.replaceChildren(el('h2', 'Mañana'), el('p', 'Los precios de mañana se publican sobre las 20:15'));
-  }
-  man.hidden = false;
+  $('hoy').replaceChildren(dayBlock('Hoy', loadedDate, data.today, lastIdx));
+  $('manana').replaceChildren(dayBlock('Mañana', addDays(loadedDate, 1), dia, -1, !oficial && dia.length > 0));
+  $('nota').hidden = oficial || !dia.length;
+  $('panel').hidden = false;
 }
 
 async function load() {
@@ -186,7 +209,7 @@ load();
 
 if (!sim) setInterval(() => {
   const { date, hour } = madridNow();
-  if (date !== loadedDate) { data = null; $('hoy').hidden = $('manana').hidden = true; load(); }
+  if (date !== loadedDate) { data = null; $('panel').hidden = true; load(); }
   else if (!data) return;
   else if (!data.tomorrow.length && Date.now() - lastFetch >= 10 * 60e3 && (hour >= 20 || (hour >= 13 && !data.estimate.length))) load();
   else if (currentIndex(data.today, Date.now()) !== lastIdx) render();
