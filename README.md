@@ -8,3 +8,4 @@ Web estática con el precio PVPC de la luz en España hora a hora (hoy y, cuando
 - Mañana: oficial sobre las 20:15; antes, estimación = spot de mañana + (PVPC − spot) de hace 7 días.
 - Simulación de otro día: `?fecha=AAAA-MM-DD`.
 - Subir `VERSION` en `pvpc.js` (se ve en el pie) en cada cambio publicado.
+- Instalable en el móvil (iPhone/Android): `icon.svg` + `icon-*.png` + `manifest.webmanifest`; sin service worker (los datos son en vivo).

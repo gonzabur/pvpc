@@ -4,7 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Precio de la luz hoy y mañana (PVPC)</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f5b301'/%3E%3Cpath d='M18 4 8 18h7l-2 10 11-15h-7z' fill='%23222'/%3E%3C/svg%3E">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14171b" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-title" content="PVPC">
 <style>
 :root {
   --bg: #f6f7f9; --card: #fff; --fg: #1b1f24; --muted: #5d6673; --line: #dde1e7;
@@ -23,7 +28,8 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
 main { max-width: 1000px; margin: 0 auto; padding: 12px 8px; }
-h1 { font-size: 1.2rem; margin: 0 0 10px; }
+h1 { display: flex; align-items: center; gap: 8px; font-size: 1.2rem; margin: 0 0 10px; }
+h1 img { width: 26px; height: 26px; border-radius: 6px; }
 h2 { font-size: .9375rem; line-height: 1.3; margin: 0; }
 p { margin: 0; }
 section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px var(--pad); }
@@ -94,7 +100,7 @@ footer { text-align: center; margin-top: 12px; }
 </head>
 <body>
 <main>
-  <h1>Precio de la luz (PVPC)</h1>
+  <h1><img src="icon.svg" alt="" width="26" height="26">Precio de la luz (PVPC)</h1>
   <p id="sim" class="muted" hidden></p>
   <section id="estado" aria-live="polite">
     <p id="msg">Cargando precios…</p>
