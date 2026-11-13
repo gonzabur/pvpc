@@ -9,6 +9,7 @@
 :root {
   --bg: #f6f7f9; --card: #fff; --fg: #1b1f24; --muted: #5d6673; --line: #dde1e7;
   --barato: #2e9e5b; --medio: #e0a100; --caro: #d6403a; --now: #1b1f24;
+  --pad: 6px;
   --barato-t: #17703e; --medio-t: #8a6200; --caro-t: #b3261e; /* texto: >= 4.5:1 sobre --card */
 }
 @media (prefers-color-scheme: dark) {
@@ -20,11 +21,11 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
-main { max-width: 1000px; margin: 0 auto; padding: 12px 10px; }
+main { max-width: 1000px; margin: 0 auto; padding: 12px 8px; }
 h1 { font-size: 1.2rem; margin: 0 0 10px; }
-h2 { font-size: 1rem; line-height: 1.3; margin: 0; }
+h2 { font-size: .9375rem; line-height: 1.3; margin: 0; }
 p { margin: 0; }
-section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 6px; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px var(--pad); }
 .muted { color: var(--muted); font-size: .75rem; }
 .barato { --c: var(--barato); --t: var(--barato-t); }
 .medio { --c: var(--medio); --t: var(--medio-t); }
@@ -37,16 +38,18 @@ section { background: var(--card); border: 1px solid var(--line); border-radius:
 /* Las dos tarjetas comparten filas (subgrid): cabecera, resumen y horas quedan alineadas aunque una cabecera ocupe más líneas. */
 .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; }
 .cards section { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; }
-.title { display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: 2px 6px; }
-.info { width: 28px; height: 28px; margin: -2px 0; padding: 0; border: 1.5px solid var(--muted); border-radius: 50%; background: none; color: var(--fg); font-weight: 700; line-height: 1; }
+.title { display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: 2px 4px; }
+.pill { display: inline-flex; align-items: center; gap: 3px; min-height: 28px; padding: 0 5px 0 6px; border: 1px solid var(--muted); border-radius: 999px; background: none; color: var(--fg); font-size: .6875rem; font-weight: 700; white-space: nowrap; }
+.pill i { display: grid; place-items: center; width: 12px; height: 12px; border: 1px solid currentColor; border-radius: 50%; font-size: .5625rem; font-style: normal; line-height: 1; }
 .sum { margin: 6px 0 8px; font-size: .75rem; }
-.stat { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 4px; }
-.stat b { margin-left: auto; white-space: nowrap; }
+.stat { margin-top: 2px; }
+.stat span { display: block; color: var(--muted); }
+.stat b { display: block; white-space: nowrap; }
 ol.bars { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; --vw: 3.8em; }
 ol.bars.approx { --vw: 4.8em; }
 ol.bars li { position: relative; display: grid; grid-template-columns: 3.3em minmax(0, 1fr) var(--vw); gap: 4px; align-items: center; height: 22px; padding: 0 2px 0 4px; border-radius: 6px; font-size: .75rem; white-space: nowrap; }
 ol.bars li.now-row { outline: 2px solid var(--now); outline-offset: -2px; background: color-mix(in srgb, var(--now) 8%, transparent); }
-.tri { position: absolute; left: -7px; top: 50%; transform: translateY(-50%); font-size: .625rem; line-height: 1; }
+.tri { position: absolute; left: calc(-1px - var(--pad) - .5em); top: 50%; transform: translateY(-50%); width: 1em; text-align: center; font-size: .8125rem; line-height: 1; } /* centrado en el borde izquierdo de la tarjeta */
 .t-min { color: var(--barato-t); } .t-max { color: var(--caro-t); }
 .track { height: 12px; }
 .bar { height: 100%; border-radius: 3px; min-width: 2px; background: var(--c); }
@@ -68,6 +71,7 @@ footer { text-align: center; margin-top: 12px; }
   main { padding: 20px 16px; }
   h1 { font-size: 1.5rem; }
   h2 { font-size: 1.3rem; }
+  :root { --pad: 16px; }
   section { padding: 16px; }
   .muted, .sum, ol.bars li { font-size: .9rem; }
   .badge { font-size: .75rem; }
@@ -75,7 +79,9 @@ footer { text-align: center; margin-top: 12px; }
   .cards { column-gap: 16px; }
   .sum { margin: 8px 0 12px; }
   ol.bars li { height: 28px; gap: 10px; padding: 0 4px 0 6px; }
-  .tri { left: -9px; font-size: .75rem; }
+  .tri { font-size: .9375rem; }
+  .stat { display: flex; justify-content: space-between; gap: 0 4px; margin: 0; }
+  .stat span { display: inline; color: inherit; }
   .track { height: 16px; }
 }
 </style>
@@ -138,11 +144,12 @@ function dayBlock(title, date, day, nowIdx, approx) {
   const head = el('div', null, 'title');
   head.append(el('h2', title));
   if (approx) {
-    const info = el('button', 'i', 'info');
-    info.type = 'button';
-    info.setAttribute('aria-label', 'Cómo se calcula la estimación');
-    info.onclick = () => $('info').showModal();
-    head.append(el('span', 'estimación', 'badge'), info);
+    const pill = el('button', 'estimación ', 'pill');
+    pill.type = 'button';
+    pill.setAttribute('aria-label', 'Estimación: cómo se calcula');
+    pill.append(el('i', 'i'));
+    pill.onclick = () => $('info').showModal();
+    head.append(pill);
   }
   frag.append(el('p', fmtDate(date) + (day.length ? ' · €/kWh' : ''), 'muted'), head);
   if (!day.length) {
