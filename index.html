@@ -16,13 +16,13 @@
   --barato: #2e9e5b; --medio: #e0a100; --caro: #d6403a; --now: #1b1f24;
   color-scheme: light dark;
   --pad: 4px; --lp: 4px; /* relleno lateral de las filas */
-  --barato-t: #17703e; --medio-t: #8a6200; --caro-t: #b3261e; /* texto: >= 4.5:1 sobre --card */
+  --barato-t: #146437; --medio-t: #735100; --caro-t: #a6231c; /* texto: >= 4.5:1 sobre tarjeta, zonas y fila actual */
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14171b; --card: #1e2227; --fg: #eceff3; --muted: #9aa4b2; --line: #333a43;
     --barato: #3fbf75; --medio: #e8b422; --caro: #ef5f58; --now: #fff;
-    --barato-t: #3fbf75; --medio-t: #e8b422; --caro-t: #ff7a73;
+    --barato-t: #69cd93; --medio-t: #e8b422; --caro-t: #ffa19c;
   }
 }
 * { box-sizing: border-box; }
@@ -61,9 +61,9 @@ ol.bars li { display: grid; grid-template-columns: 1em auto minmax(0, 1fr) auto;
   ol.bars li { grid-template-columns: subgrid; grid-column: 1 / -1; }
 }
 /* Zonas de peaje 2.0TD: un cuadro por tramo consecutivo, dibujado con ::before (no cambia la altura de las filas); el hueco de 2px es solo visual. */
-.z-valle { --zb: rgb(55 138 221 / .13); --zl: rgb(55 138 221 / .30); }
-.z-llano { --zb: rgb(127 119 221 / .14); --zl: rgb(127 119 221 / .32); }
-.z-punta { --zb: rgb(212 83 126 / .13); --zl: rgb(212 83 126 / .30); }
+.z-valle { --zb: rgb(0 160 210 / .15); --zl: rgb(0 160 210 / .32); }
+.z-llano { --zb: rgb(80 100 235 / .15); --zl: rgb(80 100 235 / .32); }
+.z-punta { --zb: rgb(240 90 120 / .15); --zl: rgb(240 90 120 / .32); }
 ol.bars li::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--zb); border: solid var(--zl); border-width: 0 1px; }
 ol.bars li.zs::before { top: 1px; border-top-width: 1px; border-radius: 6px 6px 0 0; }
 ol.bars li.ze::before { bottom: 1px; border-bottom-width: 1px; border-radius: 0 0 6px 6px; }
