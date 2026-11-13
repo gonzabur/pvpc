@@ -9,3 +9,4 @@ Web estática con el precio PVPC de la luz en España hora a hora (hoy y, cuando
 - Simulación de otro día: `?fecha=AAAA-MM-DD`.
 - Subir `VERSION` en `pvpc.js` (se ve en el pie) en cada cambio publicado.
 - Instalable en el móvil (iPhone/Android): `icon.svg` + `icon-*.png` + `manifest.webmanifest`; sin service worker (los datos son en vivo).
+- Franjas de peaje 2.0TD (valle/llano/punta) como zonas de color; solo festivos nacionales de fecha fija (`FESTIVOS` en `pvpc.js`).

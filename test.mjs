@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -96,5 +96,25 @@ assert.equal(fmtDate('2026-11-13'), 'vie 13 nov');
 assert.equal(fmtDate('2026-12-01'), 'mar 1 dic');
 assert.deepEqual(['00', '09', '13', '23'].map(fmtRange), ['00-01', '09-10', '13-14', '23-24']);
 assert.match(VERSION, /^\d+\.\d+\.\d+$/);
+
+// periodos 2.0TD: miércoles 2026-11-11 en cada frontera
+const wed = { 7: 'valle', 8: 'llano', 9: 'llano', 10: 'punta', 13: 'punta', 14: 'llano', 17: 'llano', 18: 'punta', 21: 'punta', 22: 'llano', 23: 'llano' };
+for (const [h, p] of Object.entries(wed)) assert.equal(period('2026-11-11', h), p, 'hora ' + h);
+assert.equal(period('2026-11-11', '00'), 'valle');
+assert.equal(period('2026-11-11', '08'), 'llano'); // hora como texto del datetime
+for (const h of [0, 12, 19, 23]) {
+  assert.equal(period('2026-11-14', h), 'valle'); // sábado
+  assert.equal(period('2026-11-15', h), 'valle'); // domingo
+  assert.equal(period('2026-12-08', h), 'valle'); // martes festivo (Inmaculada)
+}
+assert.equal(period('2026-04-03', 12), 'punta'); // Viernes Santo: laborable normal
+assert.equal(period('2027-01-01', 12), 'valle'); // festivo fijo otro año
+// el día de la semana no depende de la zona horaria del proceso
+for (const tz of ['Pacific/Kiritimati', 'America/Los_Angeles']) {
+  process.env.TZ = tz;
+  assert.equal(period('2026-11-14', 12), 'valle');
+  assert.equal(period('2026-11-13', 12), 'punta');
+}
+delete process.env.TZ;
 
 console.log('OK: todas las comprobaciones pasan');

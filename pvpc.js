@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.3.0';
+export const VERSION = '1.4.0';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -101,3 +101,14 @@ export const fmtDate = (ymd) => new Intl.DateTimeFormat('es-ES', { timeZone: 'UT
 
 // '13' -> '13-14', '23' -> '23-24'
 export const fmtRange = (h) => `${h}-${String(Number(h) + 1).padStart(2, '0')}`;
+
+// Periodo de peaje 2.0TD de una hora (hora local de Madrid) del día ymd: 'valle' | 'llano' | 'punta'.
+// ponytail: solo festivos nacionales de fecha fija; ignora autonómicos y los trasladados a lunes (Semana Santa incluida);
+// Ceuta y Melilla tienen otras franjas. Ampliar la lista FESTIVOS si hace falta.
+const FESTIVOS = ['01-01', '01-06', '05-01', '08-15', '10-12', '11-01', '12-06', '12-08', '12-25'];
+export function period(ymd, hour) {
+  const dow = new Date(ymd + 'T00:00:00Z').getUTCDay();
+  if (dow === 0 || dow === 6 || FESTIVOS.includes(ymd.slice(5))) return 'valle';
+  const h = Number(hour);
+  return h < 8 ? 'valle' : (h >= 10 && h < 14) || (h >= 18 && h < 22) ? 'punta' : 'llano';
+}
