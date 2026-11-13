@@ -47,6 +47,7 @@ footer { text-align: center; }
 <body>
 <main>
   <h1>Precio de la luz (PVPC)</h1>
+  <p id="sim" class="muted" hidden></p>
   <section id="estado" aria-live="polite">
     <p id="msg">Cargando precios…</p>
     <button id="retry" hidden>Reintentar</button>
@@ -54,11 +55,11 @@ footer { text-align: center; }
   <section id="hoy" hidden></section>
   <section id="manana" hidden></section>
   <footer class="muted">
-    <p>Datos: REE (apidatos.ree.es) · Actualizado: <span id="updated">—</span></p>
+    <p>Datos: REE (apidatos.ree.es) · Actualizado: <span id="updated">—</span> · <span id="version"></span></p>
   </footer>
 </main>
 <script type="module">
-import { madridNow, addDays, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -70,19 +71,23 @@ const el = (tag, text, cls) => {
 const hh = (e) => `${e.hour}:00`;
 const LABEL = { barato: 'barato', medio: 'medio', caro: 'caro' };
 
+const fecha = new URLSearchParams(location.search).get('fecha');
+const sim = isValidDate(fecha) ? fecha : null;  // ?fecha=AAAA-MM-DD: simulación con esa fecha como "hoy"
 let data = null;          // { today, tomorrow }
 let loadedDate = null;    // fecha de Madrid con la que se cargó
 let lastFetch = 0;
 let lastIdx = -1;         // índice de la hora vigente en el último render
 let loading = false;
 
-function dayBlock(title, day, nowIdx) {
+function dayBlock(title, day, nowIdx, approx) {
   const s = stats(day);
+  const f = (p) => (approx ? '≈ ' : '') + fmt(p);
+  const n = (p) => (approx ? '≈ ' : '') + fmtNum(p);
   const frag = document.createDocumentFragment();
   frag.append(el('h2', title));
   if (nowIdx >= 0) {
     frag.append(el('p', 'Precio ahora (' + hh(day[nowIdx]) + ')', 'muted'));
-    frag.append(el('p', fmt(day[nowIdx].price), 'now'));
+    frag.append(el('p', f(day[nowIdx].price), 'now'));
   }
   const legend = el('div', null, 'legend muted');
   for (const k of ['barato', 'medio', 'caro']) {
@@ -101,22 +106,22 @@ function dayBlock(title, day, nowIdx) {
     const bar = el('div', null, 'bar ' + lv);
     bar.style.width = Math.min(100, Math.max(0, s.max > 0 ? e.price / s.max * 100 : 0)) + '%';
     track.append(bar);
-    li.append(el('span', e.hour), track, el('span', fmtNum(e.price), 'val'));
+    li.append(el('span', e.hour), track, el('span', n(e.price), 'val'));
     if (i === nowIdx) li.append(el('span', '◀ ahora', 'tag'));
     if (i === s.minI) li.append(el('span', '▼ más barata', 'tag'));
     if (i === s.maxI) li.append(el('span', '▲ más cara', 'tag'));
-    li.title = `${hh(e)}: ${fmt(e.price)} (${lv})`;
+    li.title = `${hh(e)}: ${f(e.price)} (${lv})`;
     ol.append(li);
   });
   frag.append(ol);
 
   const dl = el('dl');
-  dl.append(el('dt', 'Mínimo'), el('dd', `${fmt(s.min)} · ${hh(day[s.minI])}`));
-  dl.append(el('dt', 'Máximo'), el('dd', `${fmt(s.max)} · ${hh(day[s.maxI])}`));
-  dl.append(el('dt', 'Media'), el('dd', fmt(s.avg)));
+  dl.append(el('dt', 'Mínimo'), el('dd', `${f(s.min)} · ${hh(day[s.minI])}`));
+  dl.append(el('dt', 'Máximo'), el('dd', `${f(s.max)} · ${hh(day[s.maxI])}`));
+  dl.append(el('dt', 'Media'), el('dd', f(s.avg)));
   frag.append(dl, el('h3', '3 horas más baratas'));
   const ul = el('ul', null, 'top3');
-  for (const i of s.cheapest) ul.append(el('li', `${hh(day[i])} · ${fmt(day[i].price)}`));
+  for (const i of s.cheapest) ul.append(el('li', `${hh(day[i])} · ${f(day[i].price)}`));
   frag.append(ul);
   return frag;
 }
@@ -129,17 +134,21 @@ function render() {
   hoy.replaceChildren(dayBlock('Hoy', data.today, lastIdx));
   hoy.hidden = false;
   const man = $('manana');
-  man.replaceChildren(data.tomorrow.length
-    ? dayBlock('Mañana', data.tomorrow, -1)
-    : el('h2', 'Mañana'));
-  if (!data.tomorrow.length) man.append(el('p', 'Los precios de mañana se publican sobre las 20:15'));
+  const oficial = data.tomorrow.length > 0;
+  const dia = oficial ? data.tomorrow : data.estimate;
+  if (dia.length) {
+    man.replaceChildren(dayBlock(oficial ? 'Mañana' : 'Mañana · estimación', dia, -1, !oficial));
+    if (!oficial) man.firstChild.after(el('p', 'Estimación a partir del mercado mayorista. Orienta sobre las horas baratas y caras; el precio exacto puede variar. Los precios oficiales se publican sobre las 20:15.', 'muted'));
+  } else {
+    man.replaceChildren(el('h2', 'Mañana'), el('p', 'Los precios de mañana se publican sobre las 20:15'));
+  }
   man.hidden = false;
 }
 
 async function load() {
   if (loading) return;
   loading = true;
-  const { date } = madridNow();
+  const date = sim ?? madridNow().date;
   if (!data) {
     $('estado').hidden = false;
     $('retry').hidden = true;
@@ -147,7 +156,7 @@ async function load() {
   }
   try {
     const tomorrow = addDays(date, 1);
-    const res = await fetch(buildUrl(date, tomorrow), { signal: AbortSignal.timeout(15000) });
+    const res = await fetch(buildUrl(addDays(tomorrow, -7), tomorrow), { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     data = parse(await res.json(), date, tomorrow);
     loadedDate = date;
@@ -156,6 +165,7 @@ async function load() {
     render();
   } catch (err) {
     if (data) { $('estado').hidden = true; lastFetch = Date.now(); return; }  // datos ya en pantalla: se reintenta más tarde
+    $('estado').hidden = false;
     $('msg').textContent = 'No se pudieron cargar los precios (' + err.message + ').';
     $('retry').hidden = false;
   } finally {
@@ -163,14 +173,22 @@ async function load() {
   }
 }
 
+$('version').textContent = 'v' + VERSION;
+if (sim) {
+  const [y, m, d] = sim.split('-');
+  const a = el('a', 'Volver a hoy');
+  a.href = './';
+  $('sim').append(`Simulación: datos del ${d}/${m}/${y} · `, a);
+  $('sim').hidden = false;
+}
 $('retry').onclick = load;
 load();
 
-setInterval(() => {
+if (!sim) setInterval(() => {
   const { date, hour } = madridNow();
   if (date !== loadedDate) { data = null; $('hoy').hidden = $('manana').hidden = true; load(); }
   else if (!data) return;
-  else if (!data.tomorrow.length && hour >= 20 && Date.now() - lastFetch >= 10 * 60e3) load();
+  else if (!data.tomorrow.length && Date.now() - lastFetch >= 10 * 60e3 && (hour >= 20 || (hour >= 13 && !data.estimate.length))) load();
   else if (currentIndex(data.today, Date.now()) !== lastIdx) render();
 }, 30e3);
 </script>

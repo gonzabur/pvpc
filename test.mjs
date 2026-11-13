@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { madridNow, addDays, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -55,7 +55,44 @@ assert.deepEqual(madridNow(new Date('2026-11-13T23:30:00Z')), { date: '2026-11-1
 assert.deepEqual(madridNow(new Date('2026-07-13T21:59:00Z')), { date: '2026-07-13', hour: 23 }); // verano +02
 assert.equal(addDays('2026-11-30', 1), '2026-12-01');
 assert.equal(addDays('2026-12-31', 1), '2027-01-01');
-assert.equal(buildUrl('2026-11-13', '2026-11-14'),
-  'https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=2026-11-13T00:00&end_date=2026-11-14T23:59&time_trunc=hour');
+assert.equal(buildUrl('2026-11-07', '2026-11-14'),
+  'https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=2026-11-07T00:00&end_date=2026-11-14T23:59&time_trunc=hour');
+assert.equal(addDays('2026-11-14', -7), '2026-11-07');
+
+// estimador: spot de mañana + (PVPC - spot) de hace 7 días, con media horaria de cuartos
+const quarters = (date, f) => Array.from({ length: 96 }, (_, i) => ({
+  value: f(Math.floor(i / 4), i % 4),
+  datetime: `${date}T${String(Math.floor(i / 4)).padStart(2, '0')}:${String(i % 4 * 15).padStart(2, '0')}:00.000+01:00`,
+}));
+const full = (pvpcToday, pvpcRef, spotRef, spotTom) => ({ included: [
+  { id: '1001', attributes: { values: [...pvpcRef, ...pvpcToday] } },
+  { id: '600', attributes: { values: [...spotRef, ...spotTom] } },
+] });
+const ref = hours('2026-11-07', 24, '+01:00', 150);                    // PVPC hace 7 días: 150 + h
+const spotRef = quarters('2026-11-07', (h) => 100 + h);                 // spot hace 7 días: 100 + h  -> peaje 50
+const spotTom = quarters('2026-11-14', (h, q) => 80 + h + q);           // media horaria = 80 + h + 1.5
+const est = parse(full(hours('2026-11-13', 24, '+01:00'), ref, spotRef, spotTom), '2026-11-13', '2026-11-14');
+assert.equal(est.today.length, 24);                                     // 'hoy' sigue agrupado con el rango ampliado
+assert.equal(est.today[0].hour, '00');
+assert.deepEqual(est.tomorrow, []);
+assert.equal(est.estimate.length, 24);
+assert.equal(est.estimate[5].hour, '05');
+assert.ok(Math.abs(est.estimate[5].price - toKwh(80 + 5 + 1.5 + 50)) < 1e-12);
+assert.equal(est.estimate[0].t, Date.parse('2026-11-14T00:00:00+01:00'));
+// con mañana oficial no hay estimación
+const off = parse(full([...hours('2026-11-13', 24, '+01:00'), ...hours('2026-11-14', 24, '+01:00')], ref, spotRef, spotTom), '2026-11-13', '2026-11-14');
+assert.deepEqual(off.estimate, []);
+assert.equal(off.tomorrow.length, 24);
+// falta una hora de referencia (PVPC hace 7 días), spot de mañana incompleto o sin serie 600 -> sin estimación parcial
+const hoy = hours('2026-11-13', 24, '+01:00');
+assert.deepEqual(parse(full(hoy, ref.slice(1), spotRef, spotTom), '2026-11-13', '2026-11-14').estimate, []);
+assert.deepEqual(parse(full(hoy, ref, spotRef.slice(4), spotTom), '2026-11-13', '2026-11-14').estimate, []);
+assert.deepEqual(parse(full(hoy, ref, spotRef, spotTom.slice(0, 50)), '2026-11-13', '2026-11-14').estimate, []);
+assert.deepEqual(parse({ included: [{ id: '1001', attributes: { values: [...ref, ...hoy] } }] }, '2026-11-13', '2026-11-14').estimate, []);
+
+// fecha de simulación y versión
+assert.ok(isValidDate('2026-11-11'));
+for (const bad of ['2026-02-30', '2026-13-01', '2026-1-1', 'hoy', '', null]) assert.ok(!isValidDate(bad), String(bad));
+assert.match(VERSION, /^\d+\.\d+\.\d+$/);
 
 console.log('OK: todas las comprobaciones pasan');
