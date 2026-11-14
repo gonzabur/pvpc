@@ -85,6 +85,8 @@ section { background: var(--card); border: 1px solid var(--line); border-radius:
 /* Las dos tarjetas comparten filas (subgrid): cabecera, resumen y horas quedan alineadas aunque una cabecera ocupe más líneas. */
 .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; }
 .cards section { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; }
+/* Aviso sin precios de mañana: en la fila de las horas, para no alargar la cabecera/resumen de la otra tarjeta. */
+.cards .ph { grid-row: 4; align-self: start; }
 .title { display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: 2px 4px; }
 .pill { display: inline-flex; align-items: center; gap: 3px; min-height: 28px; padding: 0 5px 0 6px; border: 1px solid var(--muted); border-radius: 999px; background: none; color: var(--fg); font-size: .6875rem; font-weight: 700; white-space: nowrap; }
 .pill i { display: grid; place-items: center; width: 12px; height: 12px; border: 1px solid currentColor; border-radius: 50%; font-size: .5625rem; font-style: normal; line-height: 1; }
@@ -279,7 +281,7 @@ function dayBlock(title, date, day, nowIdx, approx) {
     const oficial = 'Los precios oficiales del PVPC se publican sobre las 20:15.';
     frag.append(el('p', sim ? oficial : madridNow().hour < 13
       ? 'A las 13:00 se conoce el precio mayorista de mañana y mostraremos una estimación. ' + oficial
-      : 'Hoy no hay estimación disponible. ' + oficial));
+      : 'Hoy no hay estimación disponible. ' + oficial, 'ph'));
     return frag;
   }
 
