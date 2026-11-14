@@ -25,7 +25,6 @@ function applyTheme(pref) {
   if (b) {
     b.title = dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
     b.setAttribute('aria-label', b.title);
-    b.toggleAttribute('data-forced', pref !== 'auto');
   }
 }
 let temaPref = 'auto';
@@ -66,7 +65,6 @@ h1 { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 1.2r
 /* Botón de aspecto al estilo del Centro de control de macOS: círculo medio relleno, sin texto. */
 .tema-btn { position: relative; flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--fg) 18%, var(--bg)); color: var(--fg); }
 .tema-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.tema-btn[data-forced]::after { content: ''; position: absolute; top: 1px; right: 1px; width: 7px; height: 7px; border: 1.5px solid var(--bg); border-radius: 50%; background: var(--accent); } /* tema forzado (no automático) */
 h1 img { width: 26px; height: 26px; border-radius: 6px; }
 h2 { font-size: .9375rem; line-height: 1.3; margin: 0; }
 p { margin: 0; }
@@ -202,7 +200,7 @@ footer { text-align: center; margin-top: 12px; }
 <main>
   <header class="top">
     <h1><img src="icon.svg" alt="" width="26" height="26">Precio de la luz (PVPC)</h1>
-    <button type="button" id="tema" class="tema-btn"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg></button>
+    <button type="button" id="tema" class="tema-btn"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></button>
   </header>
   <p id="sim" class="muted" hidden></p>
   <section id="estado" aria-live="polite">
@@ -478,11 +476,18 @@ try {
 showVals();
 // Botón de aspecto: pasa al tema opuesto al que se ve; si ese coincide con el del sistema, vuelve a "automático".
 applyTheme(document.documentElement.dataset.pref);  // etiqueta inicial del botón
+let temaGiro = 0;
 $('tema').onclick = () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   const pref = next === (temaMq.matches ? 'dark' : 'light') ? 'auto' : next;
   try { localStorage.setItem('pvpc-tema', pref); } catch {}
   applyTheme(pref);
+  // Como en el iPhone: el icono se encoge, gira media vuelta y recupera su tamaño (sin animación si se pide menos movimiento).
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const r = temaGiro; temaGiro += 180;
+    $('tema').firstElementChild.animate([{ transform: `rotate(${r}deg)` }, { transform: `rotate(${r + 90}deg) scale(.6)` },
+      { transform: `rotate(${r + 180}deg)` }], { duration: 450, easing: 'ease-in-out', fill: 'forwards' });
+  }
 };
 $('calc').onsubmit = (e) => e.preventDefault();
 $('calc').elements.ini.onfocus = $('calc').elements.ini.onpointerdown = () => updateCalc();  // lista al día al abrirla
