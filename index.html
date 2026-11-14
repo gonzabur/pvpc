@@ -128,23 +128,30 @@ button { font: inherit; cursor: pointer; }
 #info form { text-align: right; }
 details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .calc summary { min-height: 28px; font-weight: 700; cursor: pointer; }
-.calc .f { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin-top: 8px; font-size: .875rem; }
-.calc select { width: 7.5em; max-width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
-.calc select { width: 11em; }
-fieldset.f { border: 0; margin: 8px 0 0; padding: 0; min-width: 0; }
-fieldset.f legend { float: left; padding: 0; }
-.sl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 8px; margin-top: 10px; font-size: .875rem; }
-.sl output { font-weight: 700; font-variant-numeric: tabular-nums; }
-.sl input { grid-column: 1 / -1; width: 100%; height: 28px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
+/* Filas compactas en una línea: etiqueta | control | valor (columnas fijas para que todo quede alineado). */
+.calc { --lab: 84px; --val: 4.6em; }
+.calc .f, .sl { display: grid; align-items: center; column-gap: 8px; margin-top: 6px; font-size: .875rem; }
+.calc .f { grid-template-columns: var(--lab) minmax(0, 1fr); }
+.sl { grid-template-columns: var(--lab) minmax(0, 1fr) var(--val); }
+.calc select { width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
+fieldset.f { border: 0; padding: 0; min-width: 0; }
+fieldset.f legend { float: left; padding: 0; }  /* flotante: se coloca como una celda más de la rejilla */
+.sl label { grid-column: 1; grid-row: 1; }
+.sl output { grid-column: 3; grid-row: 1; text-align: right; white-space: nowrap; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sl input { grid-column: 2; grid-row: 1; width: 100%; height: 28px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
 .sl input::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--muted); }
 .sl input::-moz-range-track { height: 6px; border-radius: 3px; background: var(--muted); }
 .sl input::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border: 3px solid var(--card); /* anillo que lo separa de la pista */ border-radius: 50%; background: var(--accent); }
 .sl input::-moz-range-thumb { width: 18px; height: 18px; border: 3px solid var(--card); border-radius: 50%; background: var(--accent); }
 .sl input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
-.ticks { grid-column: 1 / -1; position: relative; height: 1.2em; }
+.ticks { grid-column: 2; position: relative; height: 1.3em; font-size: .75rem; }
 .ticks span { position: absolute; white-space: nowrap; left: calc(12px + (100% - 24px) * var(--p)); transform: translateX(-50%); }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.seg label { position: relative; min-height: 28px; display: grid; place-items: center; padding: 0 10px; cursor: pointer; }
+/* Paradas de potencia: marcas siempre; números bajo cada marca solo si hay sitio (≥ 700px), si no, en una línea aparte. */
+.stops { height: 6px; }
+.stops span { top: 0; width: 1px; height: 5px; background: var(--muted); color: transparent; }
+.stops-txt { grid-column: 2; font-size: .75rem; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg label { flex: 1; position: relative; min-height: 28px; display: grid; place-items: center; padding: 0 10px; cursor: pointer; }
 .seg label + label { border-left: 1px solid var(--line); }
 .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .seg label:has(input:checked) { background: var(--fg); color: var(--card); font-weight: 700; }
@@ -180,7 +187,15 @@ footer { text-align: center; margin-top: 12px; }
   .stat { display: flex; justify-content: space-between; gap: 0 4px; margin: 0; }
   .stat span { display: inline; color: inherit; }
   .track { height: 16px; }
+  .calc { --lab: 140px; }
+  .stops { height: 2.6em; }
+  .stops span { color: inherit; background: none; width: auto; height: auto; padding-top: 6px; }
+  .stops span::before { content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 5px; background: var(--muted); }
+  .stops span:nth-child(even) { top: 1.2em; }
+  .stops span:nth-child(even)::before { top: -1.2em; height: calc(1.2em + 5px); }
+  .stops-txt { display: none; }
 }
+@media (min-width: 360px) and (max-width: 699px) { .calc { --lab: 96px; } }
 </style>
 </head>
 <body>
@@ -209,14 +224,17 @@ footer { text-align: center; margin-top: 12px; }
     <details class="calc">
       <summary>Calcular carga del coche</summary>
       <form id="calc">
-        <div class="sl"><label for="c-bat">Batería</label><output for="c-bat" id="o-bat"></output><input id="c-bat" name="bat" type="range" min="10" max="200" step="1" value="60"></div>
+        <div class="sl"><label for="c-bat">Batería</label><output for="c-bat" id="o-bat"></output><input id="c-bat" name="bat" type="range" min="5" max="120" step="1" value="60"></div>
         <div class="sl"><label for="c-soc">Carga actual</label><output for="c-soc" id="o-soc"></output><input id="c-soc" name="soc" type="range" min="0" max="99" step="1" value="20"></div>
         <div class="sl"><label for="c-obj">Cargar hasta</label><output for="c-obj" id="o-obj"></output><input id="c-obj" name="obj" type="range" min="50" max="100" step="5" value="80" list="obj-marcas">
           <datalist id="obj-marcas"><option value="60"></option><option value="80"></option><option value="100"></option></datalist>
-          <div class="ticks muted" aria-hidden="true"><span style="--p: .2">60 %</span><span style="--p: .6">80 %</span><span style="--p: 1; transform: translateX(-100%)">100 %</span></div></div>
+          <div class="ticks muted" aria-hidden="true"><span style="left: 0; transform: none">50</span><span style="--p: .2">60</span><span style="--p: .6">80</span><span style="left: auto; right: 0; transform: none">100</span></div></div>
         <fieldset class="f"><legend>Conexión</legend><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></fieldset>
-        <div class="sl"><label for="c-amp">Intensidad</label><output for="c-amp" id="o-amp"></output><input id="c-amp" name="amp" type="range" min="6" max="32" step="1" value="16"></div>
-        <div class="sl"><label for="c-kwmax">Potencia máx.</label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.1" value="7.4"></div>
+        <div class="sl"><label for="c-amp">Intensidad</label><output for="c-amp" id="o-amp"></output><input id="c-amp" name="amp" type="range" min="5" max="32" step="1" value="16"></div>
+        <div class="sl"><label for="c-kwmax">Potencia máx.</label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas">
+          <datalist id="kw-paradas"><option value="3.45"></option><option value="4.6"></option><option value="5.75"></option><option value="6.9"></option><option value="9.2"></option></datalist>
+          <div class="ticks stops muted" aria-hidden="true"><span style="--p: .1167">3,45</span><span style="--p: .1714">4,6</span><span style="--p: .2262">5,75</span><span style="--p: .2810">6,9</span><span style="--p: .3905">9,2</span></div>
+          <p class="stops-txt muted">Paradas: 3,45 · 4,6 · 5,75 · 6,9 · 9,2 kW</p></div>
         <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
         <p id="calc-kw" class="muted"></p>
         <div id="calc-out" class="res" aria-live="polite"></div>
@@ -445,7 +463,7 @@ function showVals() {
   const f = $('calc').elements;
   const unit = { bat: ' kWh', soc: ' %', obj: ' %', amp: ' A', kwmax: ' kW' };
   for (const k in unit) {
-    const text = (k === 'kwmax' ? dec(f[k].valueAsNumber, 1) : f[k].value) + unit[k];
+    const text = (k === 'kwmax' ? String(+f[k].valueAsNumber.toFixed(2)).replace('.', ',') : f[k].value) + unit[k];
     $('o-' + k).textContent = text;
     f[k].setAttribute('aria-valuetext', text);
   }
@@ -468,7 +486,17 @@ $('tema').onclick = () => {
 };
 $('calc').onsubmit = (e) => e.preventDefault();
 $('calc').elements.ini.onfocus = $('calc').elements.ini.onpointerdown = () => updateCalc();  // lista al día al abrirla
-$('calc').oninput = () => {
+// Potencia: al arrastrar (ratón o dedo) se pega a las paradas habituales si queda a ≤ 0,2 kW; con el teclado no,
+// para que las flechas puedan salir de una parada.
+const PARADAS = [3.45, 4.6, 5.75, 6.9, 9.2];
+const kwIn = $('calc').elements.kwmax;
+kwIn.onpointerdown = () => { kwIn.dataset.ptr = '1'; };
+kwIn.onkeydown = () => { delete kwIn.dataset.ptr; };
+$('calc').oninput = (e) => {
+  if (e.target === kwIn && kwIn.dataset.ptr) {
+    const p = PARADAS.find((x) => Math.abs(x - kwIn.valueAsNumber) <= 0.2);
+    if (p !== undefined) kwIn.value = p;
+  }
   showVals();
   try { localStorage.setItem(CAR_KEY, JSON.stringify(Object.fromEntries(CAR.map((k) => [k, $('calc').elements[k].value])))); } catch {}
   updateCalc();
