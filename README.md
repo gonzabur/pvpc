@@ -11,4 +11,4 @@ Web estática con el precio PVPC de la luz en España hora a hora (hoy y, cuando
 - Instalable en el móvil (iPhone/Android): `icon.svg` + `icon-*.png` + `manifest.webmanifest`; sin service worker (los datos son en vivo).
 - Franjas de peaje 2.0TD (valle/llano/punta) como zonas de color; solo festivos nacionales de fecha fija (`FESTIVOS` en `pvpc.js`).
 - Calculadora de carga del coche (tarjeta plegable): coste con IVA e impuesto eléctrico, hora de inicio más barata; recuerda los datos del coche en `localStorage`.
-- Aspecto Claro / Oscuro / Automático (arriba a la derecha), guardado en `localStorage` (`pvpc-tema`).
+- Botón de aspecto (arriba a la derecha): sigue al sistema o fuerza el tema opuesto; guardado en `localStorage` (`pvpc-tema`).

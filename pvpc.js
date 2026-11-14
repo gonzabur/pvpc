@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.6.0';
+export const VERSION = '1.6.1';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
