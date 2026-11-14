@@ -10,25 +10,65 @@
 <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14171b" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-title" content="PVPC">
+<script>
+// Aspecto antes de pintar: preferencia 'light' | 'dark' | 'auto' (sigue al sistema). data-theme es siempre el efectivo.
+const temaMq = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(pref) {
+  if (!['light', 'dark', 'auto'].includes(pref)) pref = 'auto';
+  const dark = pref === 'dark' || (pref === 'auto' && temaMq.matches);
+  document.documentElement.dataset.pref = pref;
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  for (const m of document.querySelectorAll('meta[name=theme-color]')) {
+    m.content = (pref === 'auto' ? m.media.includes('dark') : dark) ? '#14171b' : '#f6f7f9';
+  }
+}
+let temaPref = 'auto';
+try { temaPref = localStorage.getItem('pvpc-tema') || 'auto'; } catch {}
+applyTheme(temaPref);
+temaMq.addEventListener('change', () => applyTheme(document.documentElement.dataset.pref));
+</script>
 <style>
 :root {
   --bg: #f6f7f9; --card: #fff; --fg: #1b1f24; --muted: #5d6673; --line: #dde1e7;
   --barato: #2e9e5b; --medio: #e0a100; --caro: #d6403a; --now: #1b1f24;
-  color-scheme: light dark;
+  color-scheme: light;
+  --accent: #3478f6; /* >= 3:1 sobre los fondos claro y oscuro */
   --pad: 4px; --lp: 4px; /* relleno lateral de las filas */
   --barato-t: #146437; --medio-t: #735100; --caro-t: #a6231c; /* texto: >= 4.5:1 sobre tarjeta, zonas y fila actual */
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14171b; --card: #1e2227; --fg: #eceff3; --muted: #9aa4b2; --line: #333a43;
-    --barato: #3fbf75; --medio: #e8b422; --caro: #ef5f58; --now: #fff;
-    --barato-t: #69cd93; --medio-t: #e8b422; --caro-t: #ffa19c;
-  }
+/* Tema oscuro (única definición): data-theme lo fija el script de <head> según la preferencia o el sistema. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14171b; --card: #1e2227; --fg: #eceff3; --muted: #9aa4b2; --line: #333a43;
+  --barato: #3fbf75; --medio: #e8b422; --caro: #ef5f58; --now: #fff;
+  --barato-t: #69cd93; --medio-t: #e8b422; --caro-t: #ffa19c;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
 main { max-width: 1000px; margin: 0 auto; padding: 12px 8px; }
-h1 { display: flex; align-items: center; gap: 8px; font-size: 1.2rem; margin: 0 0 10px; }
+h1 { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 1.2rem; margin: 0; }
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.top h1 { min-height: 34px; }
+/* Selector de aspecto al estilo de macOS: miniaturas de ventana dibujadas con CSS. */
+.tema { display: flex; gap: 6px; flex: none; }
+.tema label { display: grid; justify-items: center; gap: 3px; cursor: pointer; font-size: .75rem; }
+.tema input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.th, .th-a::after {
+  --w: #fff; --t: #dde1e7; --x: #9aa4b2;
+  background: linear-gradient(var(--x), var(--x)) 18% 52% / 55% 12% no-repeat, linear-gradient(var(--x), var(--x)) 18% 76% / 35% 12% no-repeat,
+    linear-gradient(var(--t), var(--t)) 0 0 / 100% 24% no-repeat, var(--w);
+}
+.th { position: relative; display: block; width: 36px; height: 26px; border: 1px solid #9aa4b2; border-radius: 6px; overflow: hidden; }
+.th-d, .th-a::after { --w: #1e2227; --t: #3a414b; --x: #5d6673; }
+.th-a::after { content: ''; position: absolute; inset: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+.tema input:checked + .th { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+.tema input:focus-visible + .th { outline: 2px solid var(--fg); outline-offset: 5px; }
+.tema label > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (min-width: 520px) {
+  .th { width: 52px; height: 36px; }
+  .tema { gap: 12px; }
+  .tema label > span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+}
 h1 img { width: 26px; height: 26px; border-radius: 6px; }
 h2 { font-size: .9375rem; line-height: 1.3; margin: 0; }
 p { margin: 0; }
@@ -89,10 +129,20 @@ button { font: inherit; cursor: pointer; }
 details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .calc summary { min-height: 28px; font-weight: 700; cursor: pointer; }
 .calc .f { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin-top: 8px; font-size: .875rem; }
-.calc input[type=number], .calc select { width: 7.5em; max-width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
+.calc select { width: 7.5em; max-width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
 .calc select { width: 11em; }
 fieldset.f { border: 0; margin: 8px 0 0; padding: 0; min-width: 0; }
 fieldset.f legend { float: left; padding: 0; }
+.sl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 8px; margin-top: 10px; font-size: .875rem; }
+.sl output { font-weight: 700; font-variant-numeric: tabular-nums; }
+.sl input { grid-column: 1 / -1; width: 100%; height: 28px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.sl input::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 55%, transparent); }
+.sl input::-moz-range-track { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 55%, transparent); }
+.sl input::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border: 2px solid var(--card); border-radius: 50%; background: var(--accent); }
+.sl input::-moz-range-thumb { width: 20px; height: 20px; border: 2px solid var(--card); border-radius: 50%; background: var(--accent); }
+.sl input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
+.ticks { grid-column: 1 / -1; position: relative; height: 1.2em; }
+.ticks span { position: absolute; white-space: nowrap; left: calc(12px + (100% - 24px) * var(--p)); transform: translateX(-50%); }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .seg label { position: relative; min-height: 28px; display: grid; place-items: center; padding: 0 10px; cursor: pointer; }
 .seg label + label { border-left: 1px solid var(--line); }
@@ -135,7 +185,14 @@ footer { text-align: center; margin-top: 12px; }
 </head>
 <body>
 <main>
-  <h1><img src="icon.svg" alt="" width="26" height="26">Precio de la luz (PVPC)</h1>
+  <header class="top">
+    <h1><img src="icon.svg" alt="" width="26" height="26">Precio de la luz (PVPC)</h1>
+    <div class="tema" role="radiogroup" aria-label="Aspecto">
+      <label><input type="radio" name="tema" value="light"><i class="th"></i><span>Claro</span></label>
+      <label><input type="radio" name="tema" value="dark"><i class="th th-d"></i><span>Oscuro</span></label>
+      <label><input type="radio" name="tema" value="auto"><i class="th th-a"></i><span>Automático</span></label>
+    </div>
+  </header>
   <p id="sim" class="muted" hidden></p>
   <section id="estado" aria-live="polite">
     <p id="msg">Cargando precios…</p>
@@ -156,12 +213,14 @@ footer { text-align: center; margin-top: 12px; }
     <details class="calc">
       <summary>Calcular carga del coche</summary>
       <form id="calc">
-        <label class="f"><span>Batería (kWh)</span><input name="bat" type="number" min="10" max="200" step="any" value="60" inputmode="decimal"></label>
-        <label class="f"><span>Carga actual (%)</span><input name="soc" type="number" min="0" max="99" step="any" value="20" inputmode="decimal"></label>
-        <fieldset class="f"><legend>Cargar hasta</legend><span class="seg"><label><input type="radio" name="obj" value="60">60 %</label><label><input type="radio" name="obj" value="80" checked>80 %</label><label><input type="radio" name="obj" value="100">100 %</label></span></fieldset>
+        <div class="sl"><label for="c-bat">Batería</label><output for="c-bat" id="o-bat"></output><input id="c-bat" name="bat" type="range" min="10" max="200" step="1" value="60"></div>
+        <div class="sl"><label for="c-soc">Carga actual</label><output for="c-soc" id="o-soc"></output><input id="c-soc" name="soc" type="range" min="0" max="99" step="1" value="20"></div>
+        <div class="sl"><label for="c-obj">Cargar hasta</label><output for="c-obj" id="o-obj"></output><input id="c-obj" name="obj" type="range" min="50" max="100" step="5" value="80" list="obj-marcas">
+          <datalist id="obj-marcas"><option value="60"></option><option value="80"></option><option value="100"></option></datalist>
+          <div class="ticks muted" aria-hidden="true"><span style="--p: .2">60 %</span><span style="--p: .6">80 %</span><span style="--p: 1; transform: translateX(-100%)">100 %</span></div></div>
         <fieldset class="f"><legend>Conexión</legend><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></fieldset>
-        <label class="f"><span>Intensidad (A)</span><input name="amp" type="number" min="6" max="32" step="any" value="16" inputmode="decimal"></label>
-        <label class="f"><span>Potencia máx. (kW)</span><input name="kwmax" type="number" min="1" max="22" step="0.1" value="7.4" inputmode="decimal"></label>
+        <div class="sl"><label for="c-amp">Intensidad</label><output for="c-amp" id="o-amp"></output><input id="c-amp" name="amp" type="range" min="6" max="32" step="1" value="16"></div>
+        <div class="sl"><label for="c-kwmax">Potencia máx.</label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.1" value="7.4"></div>
         <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
         <p id="calc-kw" class="muted"></p>
         <div id="calc-out" class="res" aria-live="polite"></div>
@@ -217,7 +276,10 @@ function dayBlock(title, date, day, nowIdx, approx) {
   }
   frag.append(el('p', fmtDate(date) + (day.length ? ' · €/kWh' : ''), 'muted'), head);
   if (!day.length) {
-    frag.append(el('p', 'Los precios de mañana se publican sobre las 20:15'));
+    const oficial = 'Los precios oficiales del PVPC se publican sobre las 20:15.';
+    frag.append(el('p', sim ? oficial : madridNow().hour < 13
+      ? 'A las 13:00 se conoce el precio mayorista de mañana y mostraremos una estimación. ' + oficial
+      : 'Hoy no hay estimación disponible. ' + oficial));
     return frag;
   }
 
@@ -322,20 +384,18 @@ function updateCalc() {
     if (opts.some(([v]) => v === prev)) f.ini.value = prev;
   }
 
-  const num = (k, lo, hi) => { const v = f[k].valueAsNumber; return v >= lo && v <= hi ? v : NaN; };
-  const bat = num('bat', 10, 200), soc = num('soc', 0, 99), amp = num('amp', 6, 32), max = num('kwmax', 1, 22);
-  const bad = [[bat, 'Batería: entre 10 y 200 kWh'], [soc, 'Carga actual: entre 0 y 99 %'], [amp, 'Intensidad: entre 6 y 32 A'], [max, 'Potencia máx.: entre 1 y 22 kW']]
-    .find(([v]) => isNaN(v));
-  const obj = Number(f.obj.value), tri = f.fase.value === '3';
+  // Deslizadores: el navegador ya limita al rango y al paso, así que los valores siempre son válidos.
+  const [bat, soc, obj, amp, max] = ['bat', 'soc', 'obj', 'amp', 'kwmax'].map((k) => f[k].valueAsNumber);
+  const tri = f.fase.value === '3';
   const { line, kw } = chargeKw(tri ? 3 : 1, amp, max);
   $('calc-kw').textContent = isNaN(kw) ? '' : `${String(amp).replace('.', ',')} A × ${tri ? '400 V × √3' : '230 V'} = ${dec(line, 1)} kW → se carga a ${dec(kw, 1)} kW`;
   const out = $('calc-out');
   // #calc-out es aria-live: solo se toca si el contenido cambia (el ciclo de 30 s no debe repetir el anuncio).
   const show = (...nodes) => { if (nodes.map((n) => n.outerHTML).join('') !== out.innerHTML) out.replaceChildren(...nodes); };
-  const kwh = bad ? 0 : chargeEnergy(bat, soc, obj);
+  const kwh = chargeEnergy(bat, soc, obj);
   const hours = kwh / kw;
   const mins = Math.round(hours * 60);
-  const msg = bad ? bad[1] : kwh < 0.05 || !(mins > 0) ? 'La carga actual ya llega al objetivo.' : '';
+  const msg = kwh < 0.05 || !(mins > 0) ? 'La carga actual ya llega al objetivo.' : '';
   if (msg) return show(el('p', msg));
 
   const prices = S.map((s) => s.price);
@@ -384,13 +444,29 @@ function updateCalc() {
   show(...rows, strip, lbl);
 }
 
+// Valor de cada deslizador con su unidad, al lado de la etiqueta.
+function showVals() {
+  const f = $('calc').elements;
+  const unit = { bat: ' kWh', soc: ' %', obj: ' %', amp: ' A', kwmax: ' kW' };
+  for (const k in unit) $('o-' + k).textContent = (k === 'kwmax' ? dec(f[k].valueAsNumber, 1) : f[k].value) + unit[k];
+}
 try {
   const car = JSON.parse(localStorage.getItem(CAR_KEY));
+  // Los valores de versiones anteriores (16,5 A, 5,75 kW…) los ajusta el propio deslizador a su rango y paso.
   for (const k of CAR) if (car?.[k] != null) $('calc').elements[k].value = car[k];
 } catch {}  // almacenamiento bloqueado o dato corrupto: valores por defecto
+showVals();
+for (const r of document.querySelectorAll('[name=tema]')) {
+  r.checked = r.value === document.documentElement.dataset.pref;
+  r.onchange = () => {
+    try { localStorage.setItem('pvpc-tema', r.value); } catch {}
+    applyTheme(r.value);
+  };
+}
 $('calc').onsubmit = (e) => e.preventDefault();
 $('calc').elements.ini.onfocus = $('calc').elements.ini.onpointerdown = () => updateCalc();  // lista al día al abrirla
 $('calc').oninput = () => {
+  showVals();
   try { localStorage.setItem(CAR_KEY, JSON.stringify(Object.fromEntries(CAR.map((k) => [k, $('calc').elements[k].value])))); } catch {}
   updateCalc();
 };
