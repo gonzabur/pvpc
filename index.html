@@ -59,6 +59,7 @@ temaMq.addEventListener('change', () => {
   --sun: #ef9f27; --cl: #b4b2a9; --rn: #85b7eb;
 }
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
 main { max-width: 1000px; margin: 0 auto; padding: 12px 8px; }
 h1 { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 1.2rem; margin: 0; }
@@ -173,6 +174,11 @@ details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); bo
 .strip i.s1 { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg), inset -2px 0 var(--fg); }
 .strip i.s0.s1 { box-shadow: inset 0 0 0 2px var(--fg); }
 .strip-l { display: flex; justify-content: space-between; }
+/* Rayo y sol en su propia columna a la izquierda de la franja de precio y de la banda de sol. */
+.lane { display: flex; align-items: center; gap: 3px; margin-top: 2px; }
+.lane.p { margin-top: 8px; } .lane > div { flex: 1; margin-top: 0; }
+.lane .ic { width: 13px; height: 13px; } .ic-bolt { color: var(--medio); }
+.lane ~ .strip-l { margin-left: 16px; }
 #casa, .sol { margin-bottom: 8px; padding: 12px; }
 .sol { margin: 12px 0 0; font-size: .875rem; }
 #casa p { margin: 4px 0 8px; }
@@ -226,6 +232,7 @@ footer { text-align: center; margin-top: 12px; }
   <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="psun" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.5" fill="#ef9f27"/><path d="M9 2.5v1.5M2.5 9H4M4.4 4.4l1 1M13.6 4.4l-1 1" stroke="#ef9f27" stroke-width="1.8" stroke-linecap="round"/><path d="M8 20h9a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6 1.5A2.8 2.8 0 0 0 8 20z" fill="currentColor"/></symbol>
   <symbol id="cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18z" fill="currentColor"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M14 1.5 4.5 13.5h6.2L9 22.5 19.5 10h-6.3z" fill="currentColor"/></symbol>
   <symbol id="rain" viewBox="0 0 24 24"><path d="M7 14h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 14z" fill="currentColor"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
 </defs></svg>
 <main>
@@ -271,7 +278,7 @@ footer { text-align: center; margin-top: 12px; }
         <div class="sl"><label for="c-kwmax">Potencia máx.</label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas">
           <datalist id="kw-paradas"><option value="3.45"></option><option value="4.6"></option><option value="5.75"></option><option value="6.9"></option><option value="9.2"></option></datalist>
           <div class="ticks stops muted" aria-hidden="true"><span style="--p: .1167">3,45</span><span style="--p: .1714">4,6</span><span style="--p: .2262">5,75</span><span style="--p: .2810">6,9</span><span style="--p: .3905">9,2</span></div>
-          <p class="stops-txt muted">Paradas: 3,45 · 4,6 · 5,75 · 6,9 · 9,2 kW</p></div>
+          <p class="stops-txt muted">3,45 · 4,6 · 5,75 · 6,9 · 9,2 kW</p></div>
         <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
         <p id="calc-kw" class="muted"></p>
         <div id="calc-out" class="res" aria-live="polite"></div>
@@ -526,7 +533,7 @@ function updateCalc() {
     rows.push(row(`Más barato: empezar ${at(best.start)}`, eur(best.start, best.cost), end(best.start)));
   }
   const strip = el('div', null, 'strip');
-  strip.setAttribute('aria-hidden', 'true');
+  const lane = (name, bar, cls = '') => { const d = el('div', null, 'lane ' + cls); d.setAttribute('aria-hidden', 'true'); d.append(icon(name, '', true), bar); return d; };
   S.forEach((s, i) => {
     const nb = best ? span(best.start) : 0, n = span(i0);
     const inBest = best && i >= best.start && i < best.start + nb;
@@ -538,7 +545,7 @@ function updateCalc() {
   // Sol (opción C): mismo tramo que la carga más barata, pero el que más producen las placas; solo con previsión y algo de luz.
   const ws = S.map((s) => solarSlot(s.date, s.hour)?.w ?? 0);
   const bs = solar ? bestSolarStart(ws, hours, $('s-kwp').valueAsNumber, frac, kwh) : null;
-  const tail = [strip];
+  const tail = [lane('bolt', strip, 'p')];
   if (bs && bs.kwh > 0) {
     const nb = span(bs.start);
     const sc = bs.start === best?.start ? 'coincide con la hora más barata'
@@ -548,13 +555,12 @@ function updateCalc() {
     r.firstChild.firstChild.prepend(icon('sun', '', true));
     rows.push(r);
     const band = el('div', null, 'sunb');
-    band.setAttribute('aria-hidden', 'true');
     ws.forEach((w, i) => {
       const b = el('i', null, i >= bs.start && i < bs.start + nb ? 'sb' : '');
       if (w > 0) { b.style.background = 'var(--sun)'; b.style.opacity = .25 + Math.min(1, w / 800) * .75; }
       band.append(b);
     });
-    tail.push(band, lbl, el('p', 'Arriba precio · abajo sol', 'muted'));
+    tail.push(lane('sun', band), lbl, el('p', 'Arriba precio · abajo sol', 'muted'));
   } else tail.push(lbl);
   show(...rows, ...tail);
 }
