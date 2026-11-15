@@ -48,6 +48,7 @@ temaMq.addEventListener('change', () => {
   --accent: #3478f6; /* >= 3:1 sobre los fondos claro y oscuro */
   --pad: 4px; --lp: 4px; /* relleno lateral de las filas */
   --barato-t: #146437; --medio-t: #735100; --caro-t: #a6231c; /* texto: >= 4.5:1 sobre tarjeta, zonas y fila actual */
+  --sun: #ba7517; --cl: #888780; --rn: #185fa5; /* iconos de tiempo */
 }
 /* Tema oscuro (única definición): data-theme lo fija el script de <head> según la preferencia o el sistema. */
 :root[data-theme="dark"] {
@@ -55,6 +56,7 @@ temaMq.addEventListener('change', () => {
   --bg: #14171b; --card: #1e2227; --fg: #eceff3; --muted: #9aa4b2; --line: #333a43;
   --barato: #3fbf75; --medio: #e8b422; --caro: #ef5f58; --now: #fff;
   --barato-t: #69cd93; --medio-t: #e8b422; --caro-t: #ffa19c;
+  --sun: #ef9f27; --cl: #b4b2a9; --rn: #85b7eb;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
@@ -97,7 +99,13 @@ ol.bars li { display: grid; grid-template-columns: 1em auto minmax(0, 1fr) auto;
 @supports (grid-template-columns: subgrid) {
   ol.bars { display: grid; grid-template-columns: calc(1em + var(--lp)) max-content minmax(0, 1fr) max-content; column-gap: 4px; align-content: start; }
   ol.bars li { grid-template-columns: subgrid; grid-column: 1 / -1; }
+  ol.bars.sol { grid-template-columns: calc(1em + var(--lp)) max-content 1.1em minmax(0, 1fr) max-content; }
 }
+ol.bars.sol li { grid-template-columns: 1em auto 1.1em minmax(0, 1fr) auto; }
+@supports (grid-template-columns: subgrid) { ol.bars.sol li { grid-template-columns: subgrid; } }
+.ic { width: 1.1em; height: 1.1em; flex: none; }
+.ic.big { width: 34px; height: 34px; }
+.ic-sun { color: var(--sun); } .ic-psun, .ic-cloud { color: var(--cl); } .ic-rain { color: var(--rn); }
 /* Zonas de peaje 2.0TD: un cuadro por tramo consecutivo, dibujado con ::before (no cambia la altura de las filas); el hueco de 2px es solo visual. */
 .z-valle { --zb: rgb(0 160 210 / .15); --zl: rgb(0 160 210 / .32); }
 .z-llano { --zb: rgb(80 100 235 / .15); --zl: rgb(80 100 235 / .32); }
@@ -127,7 +135,7 @@ button { font: inherit; cursor: pointer; }
 details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .calc summary { min-height: 28px; font-weight: 700; cursor: pointer; }
 /* Filas compactas en una línea: etiqueta | control | valor (columnas fijas para que todo quede alineado). */
-.calc { --lab: 84px; --val: 4.6em; }
+.calc, .sol { --lab: 84px; --val: 4.6em; }
 .calc .f, .sl { display: grid; align-items: center; column-gap: 8px; margin-top: 6px; font-size: .875rem; }
 .calc .f { grid-template-columns: var(--lab) minmax(0, 1fr); }
 .sl { grid-template-columns: var(--lab) minmax(0, 1fr) var(--val); }
@@ -165,6 +173,25 @@ details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); bo
 .strip i.s1 { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg), inset -2px 0 var(--fg); }
 .strip i.s0.s1 { box-shadow: inset 0 0 0 2px var(--fg); }
 .strip-l { display: flex; justify-content: space-between; }
+#casa, .sol { margin-bottom: 8px; padding: 12px; }
+.sol { margin: 12px 0 0; font-size: .875rem; }
+#casa p { margin: 4px 0 8px; }
+#casa-q { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
+.sug { list-style: none; margin: 4px 0 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.sug li { padding: 10px; cursor: pointer; } .sug li + li { border-top: 1px solid var(--line); }
+.sug li[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.btns { display: flex; gap: 8px; margin-top: 10px; } .btns .btn { flex: 1; padding: 8px; }
+.btn.p { background: var(--fg); color: var(--card); border-color: var(--fg); font-weight: 700; }
+.btn:disabled { opacity: .5; cursor: default; }
+.sol-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.lnk { padding: 4px 0; border: 0; background: none; color: var(--accent); text-decoration: underline; text-align: right; }
+.day { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.day p, .sol .k { color: var(--muted); } .day p { font-size: .75rem; }
+.sep { border-top: 1px solid var(--line); margin: 8px 0; }
+.sunb { display: flex; gap: 1px; height: 8px; margin-top: 2px; }
+.sunb i { flex: 1; min-width: 0; border-radius: 2px; background: var(--line); }
+.sunb i.sb { outline: 2px solid var(--fg); outline-offset: -1px; }
+.ic-l { display: inline-flex; align-items: center; gap: 6px; }
 footer { text-align: center; margin-top: 12px; }
 [hidden] { display: none !important; }
 @media (min-width: 700px) {
@@ -183,7 +210,7 @@ footer { text-align: center; margin-top: 12px; }
   .stat { display: flex; justify-content: space-between; gap: 0 4px; margin: 0; }
   .stat span { display: inline; color: inherit; }
   .track { height: 16px; }
-  .calc { --lab: 140px; }
+  .calc, .sol { --lab: 140px; }
   .stops { height: 2.6em; }
   .stops span { color: inherit; background: none; width: auto; height: auto; padding-top: 6px; }
   .stops span::before { content: ''; position: absolute; top: 0; left: 50%; width: 1px; height: 5px; background: var(--muted); }
@@ -191,10 +218,16 @@ footer { text-align: center; margin-top: 12px; }
   .stops span:nth-child(even)::before { top: -1.2em; height: calc(1.2em + 5px); }
   .stops-txt { display: none; }
 }
-@media (min-width: 360px) and (max-width: 699px) { .calc { --lab: 96px; } }
+@media (min-width: 360px) and (max-width: 699px) { .calc, .sol { --lab: 96px; } }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position: absolute" aria-hidden="true"><defs>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="psun" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.5" fill="#ef9f27"/><path d="M9 2.5v1.5M2.5 9H4M4.4 4.4l1 1M13.6 4.4l-1 1" stroke="#ef9f27" stroke-width="1.8" stroke-linecap="round"/><path d="M8 20h9a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6 1.5A2.8 2.8 0 0 0 8 20z" fill="currentColor"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18z" fill="currentColor"/></symbol>
+  <symbol id="rain" viewBox="0 0 24 24"><path d="M7 14h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 14z" fill="currentColor"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</defs></svg>
 <main>
   <header class="top">
     <h1><img src="icon.svg" alt="" width="26" height="26">Precio de la luz (PVPC)</h1>
@@ -206,6 +239,14 @@ footer { text-align: center; margin-top: 12px; }
     <button id="retry" class="btn" hidden>Reintentar</button>
   </section>
   <div id="panel" hidden>
+    <section id="casa" hidden>
+      <h2>¿Dónde está tu casa?</h2>
+      <p class="muted">Para la previsión de sol de tus placas. Se guarda solo en este dispositivo.</p>
+      <input id="casa-q" type="text" role="combobox" aria-label="Población" aria-autocomplete="list" aria-expanded="false" aria-controls="casa-sug" autocomplete="off" enterkeyhint="search">
+      <ul id="casa-sug" class="sug" role="listbox" aria-label="Poblaciones" hidden></ul>
+      <p id="casa-msg" class="muted" aria-live="polite"></p>
+      <div class="btns"><button type="button" id="casa-no" class="btn">Ahora no</button><button type="button" id="casa-ok" class="btn p" disabled>Guardar</button></div>
+    </section>
     <section id="ahora" class="hero" hidden></section>
     <div class="cards">
       <section id="hoy"></section>
@@ -237,6 +278,15 @@ footer { text-align: center; margin-top: 12px; }
         <p class="muted" style="margin-top: 8px">Con IVA (21 %) e impuesto eléctrico (5,11 %). Sin término de potencia. Pérdidas de carga del 10 %.</p>
       </form>
     </details>
+    <section id="sol" class="sol" hidden>
+      <div class="sol-h"><h2>Sol para tus placas</h2><button type="button" id="sol-loc" class="lnk" aria-label="Cambiar población" hidden></button></div>
+      <button type="button" id="sol-set" class="btn" hidden>Poner mi población</button>
+      <div id="sol-data" hidden>
+        <div id="sol-rows"></div>
+        <div class="sl"><label for="s-kwp">Tus placas</label><output for="s-kwp" id="o-kwp"></output><input id="s-kwp" type="range" min="0.5" max="10" step="0.1" value="3"></div>
+        <p class="muted" style="margin-top: 6px">Estimación: radiación × potencia × 80 %. Datos: Open-Meteo.</p>
+      </div>
+    </section>
   </div>
   <dialog id="info">
     <div>
@@ -249,11 +299,11 @@ footer { text-align: center; margin-top: 12px; }
     </div>
   </dialog>
   <footer class="muted">
-    <p>Datos: REE (apidatos.ree.es) · Actualizado: <span id="updated">—</span> · <span id="version"></span></p>
+    <p>Datos: REE (apidatos.ree.es) · Open-Meteo (sol) · Actualizado: <span id="updated">—</span> · <span id="version"></span></p>
   </footer>
 </main>
 <script type="module">
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, chargeSlots } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, chargeSlots, PERF, geoUrl, forecastUrl, ICON_ES, weatherIcon, slotSolar, bestSolarStart, dailyKwhM2, sunHours } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -270,6 +320,37 @@ let lastFetch = 0;
 let lastIdx = -1;         // índice de la hora vigente en el último render
 let loading = false;
 let reload = false;       // cambio de día pedido durante una carga: se recarga al terminar
+const dec = (x, n) => x.toFixed(n).replace('.', ',');
+const kwhTxt = (x) => dec(x, x < 10 ? 1 : 0);
+
+// --- Sol: población en localStorage ({name, province, lat, lon} o {dismissed: true}) y previsión de Open-Meteo ---
+const CASA_KEY = 'pvpc-casa', KWP_KEY = 'pvpc-placas';
+let casa = null, casaNo = false;
+try {
+  const c = JSON.parse(localStorage.getItem(CASA_KEY));
+  if (typeof c?.name === 'string' && Number.isFinite(c.lat) && Number.isFinite(c.lon)) casa = c;
+  else casaNo = c?.dismissed === true;
+} catch {}
+let casaOpen = !casa && !casaNo;  // la tarjeta de población sale sola solo la primera vez
+let solar = null, solarKey = '', solarAt = 0;  // respuesta de la previsión (null = sin sol en pantalla)
+const solarSlot = (date, hour) => (solar ? slotSolar(solar.hourly, date, hour) : null);
+const SVG = 'http://www.w3.org/2000/svg';
+function icon(name, cls = '', deco = false) {
+  const s = document.createElementNS(SVG, 'svg');
+  s.setAttribute('class', `ic ic-${name} ${cls}`);
+  if (deco) s.setAttribute('aria-hidden', 'true');
+  else {
+    s.setAttribute('role', 'img');
+    s.setAttribute('aria-label', ICON_ES[name]);
+    const t = document.createElementNS(SVG, 'title');
+    t.textContent = ICON_ES[name];
+    s.append(t);
+  }
+  const u = document.createElementNS(SVG, 'use');
+  u.setAttribute('href', '#' + name);
+  s.append(u);
+  return s;
+}
 
 // Tarjeta de un día: cabecera, resumen y una fila fija por hora. approx: precios estimados ("≈ ").
 function dayBlock(title, date, day, nowIdx, approx) {
@@ -308,7 +389,9 @@ function dayBlock(title, date, day, nowIdx, approx) {
   );
 
   const per = day.map((e) => period(date, e.hour));
-  const ol = el('ol', null, 'bars');
+  const sl = day.map((e) => solarSlot(date, e.hour));
+  const hasSol = sl.some(Boolean);  // columna de iconos solo con previsión de ese día
+  const ol = el('ol', null, 'bars' + (hasSol ? ' sol' : ''));
   day.forEach((e, i) => {
     const lv = level(e.price, s);
     const li = el('li', null, `z-${per[i]}${per[i - 1] !== per[i] ? ' zs' : ''}${per[i + 1] !== per[i] ? ' ze' : ''}${i === nowIdx ? ' now-row' : ''}`);
@@ -316,7 +399,7 @@ function dayBlock(title, date, day, nowIdx, approx) {
     const bar = el('div', null, 'bar ' + lv);
     bar.style.width = Math.min(100, Math.max(0, s.max > 0 ? e.price / s.max * 100 : 0)) + '%';
     track.append(bar);
-    li.append(el('span', i === s.minI ? '▼' : i === s.maxI ? '▲' : '', 'tri' + (i === s.minI ? ' t-min' : i === s.maxI ? ' t-max' : '')), el('span', fmtRange(e.hour)), track, el('span', n(e.price), 'val ' + lv));
+    li.append(el('span', i === s.minI ? '▼' : i === s.maxI ? '▲' : '', 'tri' + (i === s.minI ? ' t-min' : i === s.maxI ? ' t-max' : '')), el('span', fmtRange(e.hour)), ...(hasSol ? [sl[i]?.day ? icon(sl[i].icon) : el('span')] : []), track, el('span', n(e.price), 'val ' + lv));
     li.title = `${fmtRange(e.hour)} h: ${n(e.price)} €/kWh (${lv})`;
     ol.append(li);
   });
@@ -339,6 +422,8 @@ function render() {
   }
   const oficial = data.tomorrow.length > 0;
   const dia = oficial ? data.tomorrow : data.estimate;
+  $('casa').hidden = !casaOpen;
+  renderSol();
   $('hoy').replaceChildren(dayBlock('Hoy', loadedDate, data.today, lastIdx));
   $('manana').replaceChildren(dayBlock('Mañana', addDays(loadedDate, 1), dia, -1, !oficial && dia.length > 0));
   $('nota').hidden = oficial || !dia.length;
@@ -349,7 +434,6 @@ function render() {
 // --- Calculadora de carga: datos del coche en localStorage (sin la hora de inicio) ---
 const CAR_KEY = 'pvpc-coche';
 const CAR = ['bat', 'soc', 'obj', 'fase', 'amp', 'kwmax'];
-const dec = (x, n) => x.toFixed(n).replace('.', ',');
 const hhmm = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const dayWord = (t) => ['hoy', 'mañana', 'pasado mañana'][(Date.parse(madridNow(new Date(t)).date) - Date.parse(loadedDate)) / 864e5] ?? '';
 
@@ -357,17 +441,17 @@ const dayWord = (t) => ['hoy', 'mañana', 'pasado mañana'][(Date.parse(madridNo
 function slots() {
   const out = [];
   // Niveles con las estadísticas del día completo (iguales que en las tarjetas); en el día de 25 h la 02 repetida es "(2ª)".
-  const add = (day, from, word, est) => {
+  const add = (day, from, word, est, date) => {
     const s = stats(day);
     day.forEach((e, i) => {
       if (i < from) return;
       const hh = e.hour + ':00' + (day.slice(0, i).some((x) => x.hour === e.hour) ? ' (2ª)' : '');
-      out.push({ price: e.price, t: e.t, word, hh, est, lv: level(e.price, s) });
+      out.push({ price: e.price, t: e.t, word, hh, est, date, hour: e.hour, lv: level(e.price, s) });
     });
   };
-  add(data.today, sim ? 0 : Math.max(lastIdx, 0), 'hoy', false);
+  add(data.today, sim ? 0 : Math.max(lastIdx, 0), 'hoy', false, loadedDate);
   const tom = data.tomorrow.length ? data.tomorrow : data.estimate;
-  if (tom.length) add(tom, 0, 'mañana', !data.tomorrow.length);
+  if (tom.length) add(tom, 0, 'mañana', !data.tomorrow.length, addDays(loadedDate, 1));
   return out;
 }
 
@@ -451,7 +535,28 @@ function updateCalc() {
   });
   const lbl = el('div', null, 'strip-l muted');
   lbl.append(el('span', live ? 'ahora' : `${S[0].word} ${S[0].hh}`), el('span', `${S.at(-1).word} ${S.at(-1).hh}`));
-  show(...rows, strip, lbl);
+  // Sol (opción C): mismo tramo que la carga más barata, pero el que más producen las placas; solo con previsión y algo de luz.
+  const ws = S.map((s) => solarSlot(s.date, s.hour)?.w ?? 0);
+  const bs = solar ? bestSolarStart(ws, hours, $('s-kwp').valueAsNumber, frac, kwh) : null;
+  const tail = [strip];
+  if (bs && bs.kwh > 0) {
+    const nb = span(bs.start);
+    const sc = bs.start === best?.start ? 'coincide con la hora más barata'
+      : `${end(bs.start)} · ${eur(bs.start, chargeCost(prices, bs.start, hours, kw, frac))}`;
+    const r = row(`Con más sol: empezar ${at(bs.start)}`, bs.kwh >= kwh - 0.05 ? 'toda la carga de tus placas' : `≈ ${dec(bs.kwh, 1)} kWh de tus placas`, sc);
+    r.firstChild.firstChild.className = 'ic-l';
+    r.firstChild.firstChild.prepend(icon('sun', '', true));
+    rows.push(r);
+    const band = el('div', null, 'sunb');
+    band.setAttribute('aria-hidden', 'true');
+    ws.forEach((w, i) => {
+      const b = el('i', null, i >= bs.start && i < bs.start + nb ? 'sb' : '');
+      if (w > 0) { b.style.background = 'var(--sun)'; b.style.opacity = .25 + Math.min(1, w / 800) * .75; }
+      band.append(b);
+    });
+    tail.push(band, lbl, el('p', 'Arriba precio · abajo sol', 'muted'));
+  } else tail.push(lbl);
+  show(...rows, ...tail);
 }
 
 // Valor de cada deslizador con su unidad, al lado de la etiqueta.
@@ -505,6 +610,157 @@ $('calc').oninput = (e) => {
   updateCalc();
 };
 
+// Tarjeta de sol (opción B), al final de la página.
+function renderSol() {
+  const rows = [];
+  if (casa && solar) {
+    const kp = $('s-kwp').valueAsNumber;
+    for (const [title, date] of [['Hoy', loadedDate], ['Mañana', addDays(loadedDate, 1)]]) {
+      const i = solar.daily.time.indexOf(date);
+      const mj = solar.daily.shortwave_radiation_sum[i];
+      if (i < 0 || typeof mj !== 'number') continue;
+      const m2 = dailyKwhM2(mj);
+      const [a, b] = sunHours(solar.daily.sunrise[i], solar.daily.sunset[i]);
+      const t = el('div');
+      t.append(el('b', title), el('span', ` · ${dec(m2, 1)} kWh/m²`, 'k'), el('p', `≈ ${kwhTxt(m2 * kp * PERF)} kWh con tus placas · sol de ${a} a ${b} h`));
+      const d = el('div', null, 'day');
+      d.append(t, icon(weatherIcon(solar.daily.weather_code[i]), 'big'));
+      if (rows.length) rows.push(el('div', null, 'sep'));
+      rows.push(d);
+    }
+  }
+  $('sol').hidden = !!casa && !rows.length;  // con población y sin previsión: nada de sol
+  $('sol-set').hidden = !!casa;
+  $('sol-data').hidden = !casa;
+  $('sol-loc').hidden = !casa;
+  $('sol-loc').textContent = casa?.name ?? '';
+  $('sol-rows').replaceChildren(...rows);
+}
+$('s-kwp').oninput = () => {
+  const v = $('s-kwp').valueAsNumber;
+  $('o-kwp').textContent = dec(v, 1) + ' kWp';
+  try { localStorage.setItem(KWP_KEY, String(v)); } catch {}
+  renderSol();
+  updateCalc();
+};
+try { const k = Number(localStorage.getItem(KWP_KEY)); if (k >= 0.5 && k <= 10) $('s-kwp').value = k; } catch {}
+$('o-kwp').textContent = dec($('s-kwp').valueAsNumber, 1) + ' kWp';
+
+// Previsión de Open-Meteo: como mucho una vez por hora; si falla, no hay sol en pantalla y los precios siguen igual.
+async function loadSolar(force) {
+  if (!casa || sim) return;
+  const key = `${casa.lat},${casa.lon}`;
+  if (!force && solar && key === solarKey && Date.now() - solarAt < 3600e3 && solar.daily.time[0] === madridNow().date) return;
+  solarAt = Date.now();
+  try {
+    const res = await fetch(forecastUrl(casa.lat.toFixed(4), casa.lon.toFixed(4)), { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    if (!j.hourly?.time || !j.daily?.time) throw new Error('Respuesta sin datos');
+    if (!casa || key !== `${casa.lat},${casa.lon}`) return;  // cambió la población mientras tanto
+    solar = j;
+    solarKey = key;
+  } catch {
+    solarAt = Date.now() - 50 * 60e3;  // reintento en 10 min
+    if (key !== solarKey) solar = null;
+  }
+  if (data) render();
+}
+
+// Tarjeta de población: buscador con sugerencias (teclado y toque).
+const casaQ = $('casa-q'), casaList = $('casa-sug');
+let cands = [], pick = null, act = -1, seq = 0, timer = 0;
+function setCasaOpen(open) {
+  casaOpen = open;
+  $('casa').hidden = !open;
+  renderSol();
+}
+function setPick(c) { pick = c; $('casa-ok').disabled = !c; }
+function showCands(items, msg = '') {
+  cands = items;
+  act = -1;
+  casaList.replaceChildren(...items.map((c, i) => {
+    const li = el('li', c.label);
+    li.id = 'sug' + i;
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', 'false');
+    li.onclick = () => choose(i);
+    return li;
+  }));
+  casaList.hidden = !items.length;
+  casaQ.setAttribute('aria-expanded', String(items.length > 0));
+  casaQ.removeAttribute('aria-activedescendant');
+  $('casa-msg').textContent = msg;
+}
+function mark(i) {
+  act = i;
+  [...casaList.children].forEach((li, k) => li.setAttribute('aria-selected', String(k === i)));
+  casaQ.setAttribute('aria-activedescendant', 'sug' + i);
+}
+function choose(i) {
+  setPick(cands[i]);
+  casaQ.value = cands[i].label;
+  showCands([]);
+}
+async function search(q) {
+  const my = ++seq;
+  try {
+    const res = await fetch(geoUrl(q), { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    if (my !== seq) return;
+    const items = (j.results ?? []).filter((x) => Number.isFinite(x.latitude) && Number.isFinite(x.longitude)).map((x) => {
+      const province = (x.admin2 || x.admin1 || '').replace(/^Provincia de /, '');
+      return { name: x.name, province, lat: x.latitude, lon: x.longitude, label: province ? `${x.name} · ${province}` : x.name };
+    });
+    showCands(items, items.length ? '' : 'Sin resultados');
+  } catch {
+    if (my === seq) showCands([], 'No se pudo buscar. Inténtalo de nuevo.');
+  }
+}
+function saveCasa() {
+  if (!pick) return;
+  casa = { name: pick.name, province: pick.province, lat: pick.lat, lon: pick.lon };
+  try { localStorage.setItem(CASA_KEY, JSON.stringify(casa)); } catch {}
+  setCasaOpen(false);
+  loadSolar(true);
+}
+casaQ.oninput = () => {
+  setPick(null);
+  clearTimeout(timer);
+  const q = casaQ.value.trim();
+  seq++;
+  if (q.length < 2) return showCands([]);
+  timer = setTimeout(() => search(q), 300);
+};
+casaQ.onkeydown = (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!cands.length) return;
+    e.preventDefault();
+    mark((act + (e.key === 'ArrowDown' ? 1 : -1) + cands.length) % cands.length);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (act >= 0) choose(act);
+    else saveCasa();
+  } else if (e.key === 'Escape') showCands([]);
+};
+$('casa-ok').onclick = saveCasa;
+$('casa-no').onclick = () => {
+  if (!casa) {
+    casaNo = true;
+    try { localStorage.setItem(CASA_KEY, JSON.stringify({ dismissed: true })); } catch {}
+  }
+  setCasaOpen(false);
+};
+$('sol-loc').onclick = $('sol-set').onclick = () => {
+  setCasaOpen(true);
+  casaQ.value = '';
+  setPick(null);
+  showCands([]);
+  casaQ.focus();
+  $('casa').scrollIntoView({ block: 'nearest' });
+};
+
 async function load() {
   if (loading) return;
   loading = true;
@@ -523,6 +779,7 @@ async function load() {
     lastFetch = Date.now();
     $('updated').textContent = new Date().toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' }) + ' (hora de Madrid)';
     render();
+    loadSolar();
   } catch (err) {
     if (data) { $('estado').hidden = true; lastFetch = Date.now(); return; }  // datos ya en pantalla: se reintenta más tarde
     $('estado').hidden = false;
@@ -556,6 +813,7 @@ function rollover() {
 
 if (!sim) setInterval(() => {
   const { date, hour } = madridNow();
+  loadSolar();  // como mucho una vez por hora
   if (date !== loadedDate) rollover();
   else if (!data) return;
   else if (!data.tomorrow.length && Date.now() - lastFetch >= 10 * 60e3 && (hour >= 20 || (hour >= 13 && !data.estimate.length))) load();

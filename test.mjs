@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, slotsNeeded, chargeSlots, buildUrl, toKwh, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, slotsNeeded, chargeSlots, buildUrl, toKwh, weatherIcon, slotSolar, solarKwh, bestSolarStart, dailyKwhM2, sunHours, forecastUrl, geoUrl, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -169,5 +169,41 @@ for (const [h, k] of [[0, 2], [-1, 2], [NaN, 2], [2, 0], [2, NaN], [Infinity, 2]
   assert.equal(chargeCost(pr, 0, h, k), null);
   assert.equal(cheapestStart(pr, h, k), null);
 }
+
+// --- solar ---
+assert.equal(VERSION, '1.7.0');
+assert.deepEqual([0, 1, 2, 3, 45, 48, 51, 67, 71, 77, 80, 82, 85, 86, 95, 99].map(weatherIcon),
+  ['sun', 'sun', 'psun', 'cloud', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain']);
+assert.ok(forecastUrl(40.48, -3.36).includes('latitude=40.48&longitude=-3.36') && geoUrl('Alcalá').includes('name=Alcal%C3%A1'));
+const hr = { time: [], shortwave_radiation: [], weather_code: [], is_day: [] };
+for (const d of ['2026-03-28', '2026-03-29', '2026-03-30']) for (let h = 0; h < 24; h++) {
+  if (d === '2026-03-29' && h === 2) continue;  // cambio de hora: Open-Meteo no tiene marca 02:00
+  hr.time.push(`${d}T${String(h).padStart(2, '0')}:00`);
+  hr.shortwave_radiation.push(h * 10 + (d === '2026-03-29' ? 1000 : 0));  // marca h -> h*10 (+1000 el día 29)
+  hr.weather_code.push(h === 12 ? 61 : 0);
+  hr.is_day.push(h >= 7 && h < 20 ? 1 : 0);
+}
+assert.equal(slotSolar(hr, '2026-03-28', 12).w, 130);  // tramo 12-13 -> marca 13:00 (media de 12 a 13)
+assert.equal(slotSolar(hr, '2026-03-28', 12).icon, 'rain');  // icono: marca 12:00
+assert.equal(slotSolar(hr, '2026-03-28', 23).w, 1000);  // 23-24 -> marca 00:00 del día siguiente
+assert.equal(slotSolar(hr, '2026-03-29', 23).w, 0);
+assert.equal(slotSolar(hr, '2026-03-29', 3).w, 1040);  // 03:00 existe aunque falte 02:00
+assert.equal(slotSolar(hr, '2026-03-29', 2), null);  // sin marca 02:00 -> sin dato, no un desplazamiento
+assert.equal(slotSolar(hr, '2026-03-30', 23), null);  // sin marca 00:00 del día 31
+assert.equal(slotSolar(hr, '2026-04-30', 10), null);
+assert.equal(slotSolar(hr, '2026-03-28', 3).day, false);
+assert.equal(slotSolar(hr, '2026-03-28', 10).day, true);
+// kWh: 3 kWp, (500 + 500) W/m² -> 1 kWh/m² x 3 x 0,8 = 2,4
+const ws = [0, 0, 500, 500, 1000, 100, 0];
+assert.ok(Math.abs(solarKwh(ws, 2, 2, 3) - 2.4) < 1e-9);
+assert.ok(Math.abs(solarKwh(ws, 4, 1.5, 1) - (1000 + 50) / 1000 * 0.8) < 1e-9);  // último tramo parcial en proporción
+assert.ok(Math.abs(solarKwh([1000, 1000], 0, 1.5, 1, 0.5) - (500 + 1000) / 1000 * 0.8) < 1e-9);  // "ahora": solo la fracción
+assert.equal(solarKwh(ws, 6, 2, 3), null);
+assert.equal(solarKwh(ws, 2, 2, 3, 1, 1), 1);  // tope = energía necesaria
+assert.deepEqual(bestSolarStart(ws, 2, 3), { start: 3, kwh: (500 + 1000) / 1000 * 3 * 0.8 });
+assert.equal(bestSolarStart(ws, 2, 3, 1, 1).start, 1);  // con tope, empate -> el más temprano
+assert.equal(bestSolarStart(ws, 9, 3), null);
+assert.ok(Math.abs(dailyKwhM2(20.88) - 5.8) < 1e-9);
+assert.deepEqual(sunHours('2026-11-15T07:52', '2026-11-15T17:48'), [8, 18]);
 
 console.log('OK: todas las comprobaciones pasan');

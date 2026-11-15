@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.6.4';
+export const VERSION = '1.7.0';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -161,3 +161,59 @@ export function fmtDuration(hours) {
   const m = Math.round(hours * 60);
   return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
 }
+
+// --- Previsión solar (Open-Meteo) ---
+export const PERF = 0.8;  // rendimiento global de la instalación (pérdidas de inversor, temperatura, suciedad…)
+export const geoUrl = (q) => 'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(q) + '&count=5&language=es&countryCode=ES';
+export const forecastUrl = (lat, lon) => `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+  + '&hourly=weather_code,shortwave_radiation,is_day&daily=weather_code,shortwave_radiation_sum,sunshine_duration,sunrise,sunset'
+  + '&timezone=Europe%2FMadrid&forecast_days=3';
+
+export const ICON_ES = { sun: 'Soleado', psun: 'Parcialmente nuboso', cloud: 'Nublado', rain: 'Lluvia' };
+// Código WMO -> 'sun' | 'psun' | 'cloud' | 'rain' (nieve y desconocidos: 'cloud').
+export function weatherIcon(code) {
+  if (code === 0 || code === 1) return 'sun';
+  if (code === 2) return 'psun';
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95 && code <= 99)) return 'rain';
+  return 'cloud';
+}
+
+// Sol del tramo local ymd + hour ('HH' o número) en la respuesta horaria de Open-Meteo, o null si falta.
+// Se busca por texto 'AAAA-MM-DDTHH:00' (hora local de Madrid, a prueba de cambios horarios). shortwave_radiation es la
+// media de la hora ANTERIOR a su marca: el tramo h-h+1 usa la marca h+1. Icono e is_day, la marca h.
+export function slotSolar(hourly, ymd, hour) {
+  const h = Number(hour);
+  const stamp = (d, k) => `${d}T${String(k).padStart(2, '0')}:00`;
+  const i = hourly.time.indexOf(stamp(ymd, h));
+  const j = hourly.time.indexOf(h === 23 ? stamp(addDays(ymd, 1), 0) : stamp(ymd, h + 1));
+  const w = hourly.shortwave_radiation[j];
+  if (i < 0 || j < 0 || typeof w !== 'number') return null;
+  return { w, icon: weatherIcon(hourly.weather_code[i]), day: hourly.is_day[i] === 1 || hourly.is_day[j] === 1 };
+}
+
+// kWh de las placas (kwp) en una carga de hours horas desde el tramo start; ws = W/m² de cada tramo.
+// Mismos tramos y fracciones que chargeCost. Limitado a cap (la energía que necesita la carga). null si no cabe.
+export function solarKwh(ws, start, hours, kwp, firstFraction = 1, cap = Infinity) {
+  const f = start === 0 ? firstFraction : 1;
+  if (!(hours > 0 && f > 0)) return null;
+  const need = chargeSlots(hours, f);
+  if (start + need > ws.length) return null;
+  let wh = ws[start] * Math.min(f, hours);
+  for (let i = 1, left = hours - f; i < need; i++, left--) wh += ws[start + i] * Math.min(1, left);
+  return Math.min(cap, wh / 1000 * kwp * PERF);
+}
+
+// Inicio con más sol: { start, kwh } (empate -> el más temprano), o null.
+export function bestSolarStart(ws, hours, kwp, firstFraction = 1, cap = Infinity) {
+  let best = null;
+  for (let s = 0; s < ws.length; s++) {
+    const kwh = solarKwh(ws, s, hours, kwp, firstFraction, cap);
+    if (kwh !== null && (!best || kwh > best.kwh + 1e-12)) best = { start: s, kwh };
+  }
+  return best;
+}
+
+export const dailyKwhM2 = (mj) => mj / 3.6;
+
+// '2026-11-15T07:52', '2026-11-15T17:48' -> [8, 18] (horas redondeadas de salida y puesta de sol)
+export const sunHours = (sunrise, sunset) => [sunrise, sunset].map((s) => Math.round(Number(s.slice(11, 13)) + Number(s.slice(14, 16)) / 60));

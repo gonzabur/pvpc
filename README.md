@@ -12,3 +12,4 @@ Web estática con el precio PVPC de la luz en España hora a hora (hoy y, cuando
 - Franjas de peaje 2.0TD (valle/llano/punta) como zonas de color; solo festivos nacionales de fecha fija (`FESTIVOS` en `pvpc.js`).
 - Calculadora de carga del coche (tarjeta plegable): coste con IVA e impuesto eléctrico, hora de inicio más barata; recuerda los datos del coche en `localStorage`.
 - Botón de aspecto (arriba a la derecha): sigue al sistema o fuerza el tema opuesto; guardado en `localStorage` (`pvpc-tema`).
+- Sol (Open-Meteo, sin clave): la primera vez pide la población (`pvpc-casa`, solo en el dispositivo) y muestra iconos de tiempo por hora, el sol en la calculadora de carga y una tarjeta de producción estimada (kWh/m² × kWp × 80 %; kWp en `pvpc-placas`). Si la previsión falla, todo lo solar se oculta.
