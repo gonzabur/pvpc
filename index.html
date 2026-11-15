@@ -132,8 +132,6 @@ details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); bo
 .calc .f { grid-template-columns: var(--lab) minmax(0, 1fr); }
 .sl { grid-template-columns: var(--lab) minmax(0, 1fr) var(--val); }
 .calc select { width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
-fieldset.f { border: 0; padding: 0; min-width: 0; }
-fieldset.f legend { float: left; padding: 0; }  /* flotante: se coloca como una celda más de la rejilla */
 .sl label { grid-column: 1; grid-row: 1; }
 .sl output { grid-column: 3; grid-row: 1; text-align: right; white-space: nowrap; font-weight: 700; font-variant-numeric: tabular-nums; }
 .sl input { grid-column: 2; grid-row: 1; width: 100%; height: 28px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
@@ -227,7 +225,7 @@ footer { text-align: center; margin-top: 12px; }
         <div class="sl"><label for="c-obj">Cargar hasta</label><output for="c-obj" id="o-obj"></output><input id="c-obj" name="obj" type="range" min="50" max="100" step="5" value="80" list="obj-marcas">
           <datalist id="obj-marcas"><option value="60"></option><option value="80"></option><option value="100"></option></datalist>
           <div class="ticks muted" aria-hidden="true"><span style="left: 0; transform: none">50</span><span style="--p: .2">60</span><span style="--p: .6">80</span><span style="left: auto; right: 0; transform: none">100</span></div></div>
-        <fieldset class="f"><legend>Conexión</legend><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></fieldset>
+        <div class="f" role="radiogroup" aria-labelledby="l-fase"><span id="l-fase">Conexión</span><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></div>
         <div class="sl"><label for="c-amp">Intensidad</label><output for="c-amp" id="o-amp"></output><input id="c-amp" name="amp" type="range" min="5" max="32" step="1" value="16"></div>
         <div class="sl"><label for="c-kwmax">Potencia máx.</label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas">
           <datalist id="kw-paradas"><option value="3.45"></option><option value="4.6"></option><option value="5.75"></option><option value="6.9"></option><option value="9.2"></option></datalist>
