@@ -196,7 +196,7 @@ for (const [h, k] of [[0, 2], [-1, 2], [NaN, 2], [2, 0], [2, NaN], [Infinity, 2]
 }
 
 // --- solar ---
-assert.equal(VERSION, '1.11.0');
+assert.equal(VERSION, '1.11.1');
 assert.deepEqual([0, 1, 2, 3, 45, 48, 51, 67, 71, 77, 80, 82, 85, 86, 95, 99].map(weatherIcon),
   ['sun', 'sun', 'psun', 'cloud', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain']);
 assert.ok(forecastUrl(40.48, -3.36).includes('latitude=40.48&longitude=-3.36') && geoUrl('Alcalá').includes('name=Alcal%C3%A1'));

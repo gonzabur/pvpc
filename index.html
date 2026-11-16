@@ -316,7 +316,7 @@ footer { text-align: center; margin-top: 12px; }
       <button type="button" id="sol-set" class="btn" hidden>Poner mi población</button>
       <div id="sol-data" hidden>
         <div id="sol-rows"></div>
-        <div class="sl" data-ed="kwp"><label for="s-kwp">Tus placas</label><output for="s-kwp" id="o-kwp"></output><input id="s-kwp" type="range" min="0.5" max="10" step="0.1" value="3"><button type="button" class="lnk ed-n"></button><button type="button" class="ok ed-c">OK</button></div>
+        <div class="sl" data-ed="kwp"><label for="s-kwp">Tus placas</label><output for="s-kwp" id="o-kwp"></output><input id="s-kwp" type="range" min="0" max="10" step="0.1" value="3"><button type="button" class="lnk ed-n"></button><button type="button" class="ok ed-c">OK</button></div>
         <p class="muted" style="margin-top: 6px">Población: <button type="button" id="sol-loc" class="lnk" aria-label="Cambiar población"></button> · Estimación: radiación × potencia × 80 %. Datos: Open-Meteo.</p>
       </div>
     </details>
@@ -742,7 +742,7 @@ $('s-kwp').oninput = () => {
   renderSol();
   updateCalc();
 };
-try { const k = Number(localStorage.getItem(KWP_KEY)); if (k >= 0.5 && k <= 10) $('s-kwp').value = k; } catch {}
+try { const r = localStorage.getItem(KWP_KEY), k = Number(r); if (r !== null && r !== '' && k >= 0 && k <= 10) $('s-kwp').value = k; } catch {}  // 0 = sin placas
 $('o-kwp').textContent = dec($('s-kwp').valueAsNumber, 1) + ' kWp';
 edLinks();
 
