@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, chargePlan, cheapestPlan, cheapestStart, fmtDuration, slotsNeeded, chargeSlots, buildUrl, toKwh, weatherIcon, slotSolar, solarKwh, bestSolarStart, dailyKwhM2, sunHours, forecastUrl, geoUrl, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, chargePlan, cheapestPlan, chargeGridCost, PERF, cheapestStart, fmtDuration, slotsNeeded, chargeSlots, buildUrl, toKwh, weatherIcon, slotSolar, solarKwh, bestSolarStart, dailyKwhM2, sunHours, forecastUrl, geoUrl, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -196,7 +196,7 @@ for (const [h, k] of [[0, 2], [-1, 2], [NaN, 2], [2, 0], [2, NaN], [Infinity, 2]
 }
 
 // --- solar ---
-assert.equal(VERSION, '1.8.0');
+assert.equal(VERSION, '1.9.0');
 assert.deepEqual([0, 1, 2, 3, 45, 48, 51, 67, 71, 77, 80, 82, 85, 86, 95, 99].map(weatherIcon),
   ['sun', 'sun', 'psun', 'cloud', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain']);
 assert.ok(forecastUrl(40.48, -3.36).includes('latitude=40.48&longitude=-3.36') && geoUrl('Alcalá').includes('name=Alcal%C3%A1'));
@@ -231,4 +231,26 @@ assert.equal(bestSolarStart(ws, 9, 3), null);
 assert.ok(Math.abs(dailyKwhM2(20.88) - 5.8) < 1e-9);
 assert.deepEqual(sunHours('2026-11-15T07:52', '2026-11-15T17:48'), [8, 18]);
 
+
+// Límite horario (cheapestPlan con filtro) y coste de red con placas (chargeGridCost)
+{
+  const pr = [0.1, 0.3, 0.05, 0.2];
+  assert.equal(cheapestPlan(pr, 7, 7).start, 2);                                  // sin filtro
+  assert.equal(cheapestPlan(pr, 7, 7, 1, (s, p) => s + p.hours <= 2).start, 0);   // 2 queda fuera: 2+1 > 2... 0 y 1 caben; 0 es más barato
+  assert.equal(cheapestPlan(pr, 7, 7, 1, (s) => s === 1).start, 1);
+  assert.equal(cheapestPlan(pr, 7, 7, 1, () => false), null);                     // nada cabe
+  assert.equal(cheapestPlan([0.1, 0.1], 7, 7, 1, () => true).start, 0);           // empate -> el más temprano
+  const k = [7, 7, 7, 7], z = [0, 0, 0, 0];
+  const plan = chargePlan(pr, 1, 10, k);
+  assert.ok(Math.abs(chargeGridCost(pr, 1, 10, k, z, 5) - plan.cost) < 1e-12);      // sin sol = coste del plan
+  assert.ok(Math.abs(chargeGridCost(pr, 1, 10, k, [800, 800, 800, 800], 0) - plan.cost) < 1e-12);  // sin placas
+  // 1 kWp, 500 W/m² -> 0,5×PERF kWh por hora completa. Tramo 1: 7 kWh en 1 h; tramo 2: 3 kWh en 3/7 h.
+  const s1 = 0.5 * PERF, s2 = 0.5 * PERF * 3 / 7;
+  assert.ok(Math.abs(chargeGridCost(pr, 1, 10, k, [0, 500, 500, 0], 1) - (0.3 * (7 - s1) + 0.05 * (3 - s2))) < 1e-12);
+  assert.ok(Math.abs(chargeGridCost(pr, 1, 3, k, [0, 50000, 0, 0], 1)) < 1e-12);   // sol de sobra -> 0 (sin negativos)
+  // firstFraction 0,5 en el tramo 0: 3,5 kWh en tramo 0 (media hora de sol) y 1,5 en el 1
+  const sf = 0.5 * PERF * 0.5;
+  assert.ok(Math.abs(chargeGridCost(pr, 0, 5, k, [500, 0, 0, 0], 1, 0.5) - (0.1 * (3.5 - sf) + 0.3 * 1.5)) < 1e-12);
+  assert.equal(chargeGridCost(pr, 3, 10, k, z, 1), null);                            // no cabe
+}
 console.log('OK: todas las comprobaciones pasan');

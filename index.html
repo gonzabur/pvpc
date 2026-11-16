@@ -165,13 +165,14 @@ details.calc, details.sol { margin-top: 12px; padding: 10px 12px; background: va
 .res .r { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; }
 .res b { white-space: nowrap; }
 .res .sub { color: var(--muted); font-size: .75rem; }
-.strip { display: flex; gap: 1px; height: 18px; margin-top: 8px; }
+.strip { position: relative; display: flex; gap: 1px; height: 18px; margin-top: 8px; }
 .strip i { flex: 1; min-width: 0; border-radius: 2px; background: var(--c); opacity: .3; }
 .strip i.best { opacity: 1; }
 .strip i.sel { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg); }
 .strip i.s0 { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg), inset 2px 0 var(--fg); }
 .strip i.s1 { box-shadow: inset 0 2px var(--fg), inset 0 -2px var(--fg), inset -2px 0 var(--fg); }
 .strip i.s0.s1 { box-shadow: inset 0 0 0 2px var(--fg); }
+.strip .dl { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--fg); }
 .strip-l { display: flex; justify-content: space-between; }
 /* Rayo y sol en su propia columna a la izquierda de la franja de precio y de la banda de sol. */
 .lane { display: flex; align-items: center; gap: 3px; margin-top: 2px; }
@@ -285,6 +286,7 @@ footer { text-align: center; margin-top: 12px; }
         <label class="chk"><input type="checkbox" name="p2">Otra potencia en valle (P2)</label>
         <div class="sl" id="sl-p2" hidden><label for="c-kwmax2">Potencia P2<small>valle</small></label><output for="c-kwmax2" id="o-kwmax2"></output><input id="c-kwmax2" name="kwmax2" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas"></div>
         <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
+        <label class="f"><span>Listo antes de</span><select name="fin"></select></label>
         <p id="calc-kw" class="muted"></p>
         <div id="calc-out" class="res" aria-live="polite"></div>
         <p class="muted" style="margin-top: 8px">Con IVA (21 %) e impuesto eléctrico (5,11 %). Sin término de potencia. Pérdidas de carga del 10 %.</p>
@@ -315,7 +317,7 @@ footer { text-align: center; margin-top: 12px; }
   </footer>
 </main>
 <script type="module">
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargePlan, cheapestPlan, fmtDuration, chargeSlots, PERF, geoUrl, forecastUrl, ICON_ES, weatherIcon, slotSolar, bestSolarStart, dailyKwhM2, sunHours } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargePlan, cheapestPlan, chargeGridCost, fmtDuration, chargeSlots, PERF, geoUrl, forecastUrl, ICON_ES, weatherIcon, slotSolar, bestSolarStart, dailyKwhM2, sunHours } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -445,6 +447,7 @@ function render() {
 
 // --- Calculadora de carga: datos del coche en localStorage (sin la hora de inicio) ---
 const CAR_KEY = 'pvpc-coche';
+let finHora = '';  // hora del límite (p. ej. '08'), '' = sin límite
 const CAR = ['bat', 'soc', 'obj', 'fase', 'amp', 'kwmax', 'kwmax2', 'p2'];
 const hhmm = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const dayWord = (t) => ['hoy', 'mañana', 'pasado mañana'][(Date.parse(madridNow(new Date(t)).date) - Date.parse(loadedDate)) / 864e5] ?? '';
@@ -489,6 +492,16 @@ function updateCalc() {
     f.ini.replaceChildren(...opts.map(([v, t]) => { const o = el('option', t); o.value = v; return o; }));
     if (opts.some(([v]) => v === prev)) f.ini.value = prev;
   }
+  // Límite "Listo antes de": un fin de cada tramo; se guarda solo la hora del día y se elige su primera aparición.
+  const fo = [['', 'Sin límite'], ...S.map((s, i) => [String(s.t + 36e5), `${dayWord(s.t + 36e5)} ${hhmm.format(s.t + 36e5)}${S[i + 1]?.hh.includes('(2ª)') ? ' (2ª)' : ''}`])];
+  if (!(fo.length === f.fin.options.length && fo.every(([v], i) => f.fin.options[i].value === v))) {
+    const prevFin = f.fin.value;  // se mantiene la elegida si sigue en la lista (como en «Empezar a las»)
+    f.fin.replaceChildren(...fo.map(([v, t]) => { const o = el('option', t); o.value = v; return o; }));
+    f.fin.value = prevFin && fo.some(([v]) => v === prevFin) ? prevFin : fo.find(([v]) => v && finHora && hhmm.format(+v).slice(0, 2) === finHora)?.[0] ?? '';
+  }
+  const dl = f.fin.value ? Number(f.fin.value) : null;
+  const dlTxt = dl && hhmm.format(dl);
+  const tooLate = (i, p) => dl !== null && (live && i === 0 ? nowMs : S[i].t) + p.hours * 3600e3 > dl + 1e3;
 
   // Deslizadores: el navegador ya limita al rango y al paso, así que los valores siempre son válidos.
   const [bat, soc, obj, amp, max] = ['bat', 'soc', 'obj', 'amp', 'kwmax'].map((k) => f[k].valueAsNumber);
@@ -514,7 +527,7 @@ function updateCalc() {
   const kws = S.map((s) => (period(s.date, s.hour) === 'valle' ? kw2 : kw));
   const plans = prices.map((_, i) => chargePlan(prices, i, kwh, kws, frac));
   const chosen = plans[i0]?.cost ?? null;
-  const best = cheapestPlan(prices, kwh, kws, frac);
+  const best = cheapestPlan(prices, kwh, kws, frac, (i, p) => !tooLate(i, p));
   const span = (i) => plans[i]?.slots ?? chargeSlots(hours, i === 0 ? frac : 1);
   const ap = (i) => (S.slice(i, i + span(i)).some((s) => s.est) ? '≈ ' : '');
   const cents = (c) => Math.round(c * TAX * 100);
@@ -536,13 +549,17 @@ function updateCalc() {
   };
   const noFit = `No da tiempo antes de que acaben los precios disponibles (fin de ${S.at(-1).word})`;
   const rows = [row('Energía de la red', dec(kwh, 1) + ' kWh'), row('Tiempo de carga', fmtDuration(plans[i0]?.hours ?? hours))];
-  rows.push(chosen === null ? el('p', noFit) : row(`Empezando ${at(i0)}`, eur(i0, chosen), end(i0)));
+  rows.push(chosen === null ? el('p', noFit) : row(`Empezando ${at(i0)}`, eur(i0, chosen), end(i0) + (tooLate(i0, plans[i0]) ? ' · después del límite' : '')));
   if (best && chosen !== null) {
     const save = cents(chosen) - cents(best.cost);  // en céntimos ya redondeados, como se muestran
-    rows.push(row(`Más barato: empezar ${at(best.start)}`, eur(best.start, best.cost),
+    rows.push(row(`Más barato${dl ? ` antes de las ${dlTxt}` : ''}: empezar ${at(best.start)}`, eur(best.start, best.cost),
       end(best.start) + (save >= 1 ? ` · ahorras ${ap(i0) || ap(best.start)}${dec(save / 100, 2)} €` : '')));
   } else if (best) {
-    rows.push(row(`Más barato: empezar ${at(best.start)}`, eur(best.start, best.cost), end(best.start)));
+    rows.push(row(`Más barato${dl ? ` antes de las ${dlTxt}` : ''}: empezar ${at(best.start)}`, eur(best.start, best.cost), end(best.start)));
+  } else if (dl) {
+    const r = row(`No da tiempo a cargar antes de las ${dlTxt}`, '', plans[0] ? end(0).replace('termina', 'empezando ya terminaría') : noFit);
+    r.style.color = 'var(--caro-t)';
+    rows.push(r);
   }
   const strip = el('div', null, 'strip');
   const lane = (name, bar, cls = '') => { const d = el('div', null, 'lane ' + cls); d.setAttribute('aria-hidden', 'true'); d.append(icon(name, '', true), bar); return d; };
@@ -552,16 +569,19 @@ function updateCalc() {
     const inSel = chosen !== null && i >= i0 && i < i0 + n;
     strip.append(el('i', null, `${s.lv}${inBest ? ' best' : ''}${inSel ? ' sel' : ''}${inSel && i === i0 ? ' s0' : ''}${inSel && i === i0 + n - 1 ? ' s1' : ''}`));
   });
+  const k = dl === null ? -1 : S.findIndex((s) => s.t + 36e5 === dl);
+  if (k >= 0) { const d = el('span', null, 'dl'); d.style.left = `${(k + 1) / S.length * 100}%`; strip.append(d); }
   const lbl = el('div', null, 'strip-l muted');
   lbl.append(el('span', live ? 'ahora' : `${S[0].word} ${S[0].hh}`), el('span', `${S.at(-1).word} ${S.at(-1).hh}`));
   // Sol (opción C): mismo tramo que la carga más barata, pero el que más producen las placas; solo con previsión y algo de luz.
   const ws = S.map((s) => solarSlot(s.date, s.hour)?.w ?? 0);
-  const bs = solar ? bestSolarStart(ws, (s) => plans[s]?.hours, $('s-kwp').valueAsNumber, frac, kwh) : null;
+  const bs = solar ? bestSolarStart(ws, (s) => (plans[s] && !tooLate(s, plans[s]) ? plans[s].hours : null), $('s-kwp').valueAsNumber, frac, kwh) : null;
   const tail = [lane('bolt', strip, 'p')];
   if (bs && bs.kwh > 0) {
     const nb = span(bs.start);
-    const sc = bs.start === best?.start ? 'coincide con la hora más barata'
-      : `${end(bs.start)} · ${eur(bs.start, plans[bs.start].cost)}`;
+    const g = chargeGridCost(prices, bs.start, kwh, kws, ws, $('s-kwp').valueAsNumber, frac);
+    const sc = `pagas ${eur(bs.start, g)} de red (sin placas ${eur(bs.start, plans[bs.start].cost)}) · `
+      + (bs.start === best?.start ? 'coincide con la hora más barata' : end(bs.start));
     const r = row(`Con más sol: empezar ${at(bs.start)}`, bs.kwh >= kwh - 0.05 ? 'toda la carga de tus placas' : `≈ ${dec(bs.kwh, 1)} kWh de tus placas`, sc);
     r.firstChild.firstChild.className = 'ic-l';
     r.firstChild.firstChild.prepend(icon('sun', '', true));
@@ -593,6 +613,7 @@ try {
   // Solo números (o '1'/'3' en la conexión); lo demás deja el valor por defecto del HTML.
   const ok = (k, v) => (k === 'fase' ? v === '1' || v === '3' : (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) && Number.isFinite(Number(v)));
   for (const k of CAR) if (k === 'p2') $('calc').elements.p2.checked = car?.p2 === true; else if (ok(k, car?.[k])) $('calc').elements[k].value = car[k];
+  finHora = /^\d\d$/.test(car?.fin) ? car.fin : '';
 } catch {}  // almacenamiento bloqueado o dato corrupto: valores por defecto
 $('sl-p2').hidden = !$('calc').elements.p2.checked;
 showVals();
@@ -628,8 +649,9 @@ $('calc').oninput = (e) => {
   }
   $('sl-p2').hidden = !$('calc').elements.p2.checked;
   showVals();
+  if (e.target.name === 'fin') finHora = e.target.value ? hhmm.format(+e.target.value).slice(0, 2) : '';
   const v = (k) => (k === 'p2' ? $('calc').elements.p2.checked : $('calc').elements[k].value);
-  try { localStorage.setItem(CAR_KEY, JSON.stringify(Object.fromEntries(CAR.map((k) => [k, v(k)])))); } catch {}
+  try { localStorage.setItem(CAR_KEY, JSON.stringify({ ...Object.fromEntries(CAR.map((k) => [k, v(k)])), fin: finHora })); } catch {}
   updateCalc();
 };
 

@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.8.0';
+export const VERSION = '1.9.0';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -172,13 +172,28 @@ export function chargePlan(prices, start, kwh, kws, firstFraction = 1) {
 }
 
 // Inicio más barato con chargePlan: { start, cost, hours, slots } (empate -> el más temprano), o null.
-export function cheapestPlan(prices, kwh, kws, firstFraction = 1) {
+// ok(start, plan): filtro opcional (p. ej. que la carga termine antes de una hora límite).
+export function cheapestPlan(prices, kwh, kws, firstFraction = 1, ok = () => true) {
   let best = null;
   for (let s = 0; s < prices.length; s++) {
     const p = chargePlan(prices, s, kwh, kws, firstFraction);
-    if (p && (!best || p.cost < best.cost - 1e-12)) best = { start: s, ...p };
+    if (p && ok(s, p) && (!best || p.cost < best.cost - 1e-12)) best = { start: s, ...p };
   }
   return best;
+}
+
+// € (sin impuestos) que se pagan a la red con las placas (kwp, ws = W/m² de cada tramo): como chargePlan, pero en cada tramo
+// la energía solar de ese tiempo (ws/1000 × kwp × PERF × horas) se resta de lo que consume el coche (sin bajar de 0). null si no cabe.
+export function chargeGridCost(prices, start, kwh, kws, ws, kwp, firstFraction = 1) {
+  if (!(kwh > 0 && firstFraction > 0)) return null;
+  let left = kwh, cost = 0;
+  for (let i = start; left > 1e-9; i++) {
+    const k = Array.isArray(kws) ? kws[i] : kws;
+    if (i >= prices.length || !(k > 0)) return null;
+    const take = Math.min(left, k * (i === 0 ? firstFraction : 1));
+    cost += prices[i] * Math.max(0, take - ws[i] / 1000 * kwp * PERF * take / k); left -= take;
+  }
+  return cost;
 }
 
 // 3.9 -> '3 h 54 min'; 0.5 -> '30 min'
