@@ -580,9 +580,10 @@ function updateCalc() {
   if (bs && bs.kwh > 0) {
     const nb = span(bs.start);
     const g = chargeGridCost(prices, bs.start, kwh, kws, ws, $('s-kwp').valueAsNumber, frac);
-    const sc = `pagas ${eur(bs.start, g)} de red (sin placas ${eur(bs.start, plans[bs.start].cost)}) · `
+    // Valor: lo que se paga de red (siempre estimado, por la previsión de sol); debajo, kWh de las placas y coste sin ellas.
+    const sc = `${bs.kwh >= kwh - 0.05 ? 'toda la carga de tus placas' : `≈ ${dec(bs.kwh, 1)} kWh de tus placas`} · sin ellas ${eur(bs.start, plans[bs.start].cost)} · `
       + (bs.start === best?.start ? 'coincide con la hora más barata' : end(bs.start));
-    const r = row(`Con más sol: empezar ${at(bs.start)}`, bs.kwh >= kwh - 0.05 ? 'toda la carga de tus placas' : `≈ ${dec(bs.kwh, 1)} kWh de tus placas`, sc);
+    const r = row(`Con más sol: empezar ${at(bs.start)}`, (ap(bs.start) ? '' : '≈ ') + eur(bs.start, g), sc);
     r.firstChild.firstChild.className = 'ic-l';
     r.firstChild.firstChild.prepend(icon('sun', '', true));
     rows.push(r);
