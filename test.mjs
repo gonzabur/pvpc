@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, slotsNeeded, chargeSlots, buildUrl, toKwh, weatherIcon, slotSolar, solarKwh, bestSolarStart, dailyKwhM2, sunHours, forecastUrl, geoUrl, parse, currentIndex, stats, level, fmt } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, chargePlan, cheapestPlan, cheapestStart, fmtDuration, slotsNeeded, chargeSlots, buildUrl, toKwh, weatherIcon, slotSolar, solarKwh, bestSolarStart, dailyKwhM2, sunHours, forecastUrl, geoUrl, parse, currentIndex, stats, level, fmt } from './pvpc.js';
 
 const hours = (date, n, off, base = 100) =>
   Array.from({ length: n }, (_, h) => ({
@@ -170,8 +170,33 @@ for (const [h, k] of [[0, 2], [-1, 2], [NaN, 2], [2, 0], [2, NaN], [Infinity, 2]
   assert.equal(cheapestStart(pr, h, k), null);
 }
 
+// --- carga con kW por tramo (P1/P2) ---
+{
+  const eq = (a, b) => Math.abs(a - b) < 1e-9;
+  const pp = [0.1, 0.2, 0.3, 0.4];
+  // 10 kWh a [2, 5, 5, 5]: tramo 0 -> 2 kWh (1 h), tramo 1 -> 5 kWh (1 h), tramo 2 -> 3 kWh (0,6 h)
+  const a = chargePlan(pp, 0, 10, [2, 5, 5, 5]);
+  assert.ok(eq(a.cost, 0.1 * 2 + 0.2 * 5 + 0.3 * 3) && eq(a.hours, 2.6) && a.slots === 3);
+  // igual en todos los tramos = escalar = chargeCost/chargeSlots de siempre
+  const s = chargePlan(pp, 1, 7, 4), v = chargePlan(pp, 1, 7, [4, 4, 4, 4]);
+  assert.deepEqual(s, v);
+  assert.ok(eq(s.cost, chargeCost(pp, 1, 7 / 4, 4)) && eq(s.hours, 1.75) && s.slots === chargeSlots(1.75));
+  // firstFraction (mitad del tramo 0): 1 kWh del tramo 0 a 2 kW, resto 5 kWh a 5 kW
+  const f = chargePlan(pp, 0, 6, [2, 5, 5, 5], 0.5);
+  assert.ok(eq(f.cost, 0.1 * 1 + 0.2 * 5) && eq(f.hours, 1.5) && f.slots === 2);
+  // no cabe / inválidos
+  assert.equal(chargePlan(pp, 3, 5, 4), null);
+  assert.equal(chargePlan(pp, 0, 5, [4, 0, 4, 4]), null);
+  assert.equal(chargePlan(pp, 0, 5, NaN), null);
+  assert.equal(chargePlan(pp, 0, 0, 4), null);
+  // más potencia en los tramos 2-3 (valle) y mismo precio en ellos: gana un inicio allí (kW mayor, menos horas)
+  const c = cheapestPlan([0.1, 0.3, 0.1, 0.1], 4, [2, 2, 8, 8]);
+  assert.ok(c.start === 2 && eq(c.cost, 0.4) && eq(c.hours, 0.5));
+  assert.equal(cheapestPlan(pp, 5, 1), null);
+}
+
 // --- solar ---
-assert.equal(VERSION, '1.7.1');
+assert.equal(VERSION, '1.8.0');
 assert.deepEqual([0, 1, 2, 3, 45, 48, 51, 67, 71, 77, 80, 82, 85, 86, 95, 99].map(weatherIcon),
   ['sun', 'sun', 'psun', 'cloud', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain', 'cloud', 'cloud', 'rain', 'rain']);
 assert.ok(forecastUrl(40.48, -3.36).includes('latitude=40.48&longitude=-3.36') && geoUrl('Alcalá').includes('name=Alcal%C3%A1'));

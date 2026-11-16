@@ -1,5 +1,5 @@
 // Lógica pura del PVPC: sin DOM ni red.
-export const VERSION = '1.7.1';
+export const VERSION = '1.8.0';
 const TZ = 'Europe/Madrid';
 const fmtMadrid = new Intl.DateTimeFormat('en-CA', {
   timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
@@ -156,6 +156,31 @@ export function cheapestStart(prices, hours, kw, firstFraction = 1) {
   return best;
 }
 
+// Plan de carga de kwh kWh desde el tramo start. kws: kW constantes (número) o kW de cada tramo (array indexado como prices;
+// P1/P2 cambian según el periodo). Cada tramo aporta kW × tiempo disponible (el tramo 0 solo firstFraction); el último, en proporción.
+// { cost (€ sin impuestos), hours (duración real), slots (tramos que ocupa) }, o null si no cabe o kW/kWh no válidos.
+export function chargePlan(prices, start, kwh, kws, firstFraction = 1) {
+  if (!(kwh > 0 && firstFraction > 0)) return null;
+  let left = kwh, cost = 0, hours = 0, slots = 0;
+  for (let i = start; left > 1e-9; i++) {
+    const k = Array.isArray(kws) ? kws[i] : kws;
+    if (i >= prices.length || !(k > 0)) return null;
+    const take = Math.min(left, k * (i === 0 ? firstFraction : 1));
+    cost += prices[i] * take; hours += take / k; left -= take; slots++;
+  }
+  return { cost, hours, slots };
+}
+
+// Inicio más barato con chargePlan: { start, cost, hours, slots } (empate -> el más temprano), o null.
+export function cheapestPlan(prices, kwh, kws, firstFraction = 1) {
+  let best = null;
+  for (let s = 0; s < prices.length; s++) {
+    const p = chargePlan(prices, s, kwh, kws, firstFraction);
+    if (p && (!best || p.cost < best.cost - 1e-12)) best = { start: s, ...p };
+  }
+  return best;
+}
+
 // 3.9 -> '3 h 54 min'; 0.5 -> '30 min'
 export function fmtDuration(hours) {
   const m = Math.round(hours * 60);
@@ -204,10 +229,11 @@ export function solarKwh(ws, start, hours, kwp, firstFraction = 1, cap = Infinit
 }
 
 // Inicio con más sol: { start, kwh } (empate -> el más temprano), o null.
+// hours: número o función (inicio) -> horas de esa carga (null si no cabe).
 export function bestSolarStart(ws, hours, kwp, firstFraction = 1, cap = Infinity) {
   let best = null;
   for (let s = 0; s < ws.length; s++) {
-    const kwh = solarKwh(ws, s, hours, kwp, firstFraction, cap);
+    const kwh = solarKwh(ws, s, typeof hours === 'function' ? hours(s) : hours, kwp, firstFraction, cap);
     if (kwh !== null && (!best || kwh > best.kwh + 1e-12)) best = { start: s, kwh };
   }
   return best;

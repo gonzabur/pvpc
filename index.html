@@ -133,8 +133,7 @@ button { font: inherit; cursor: pointer; }
 #info h2 { font-size: 1.1rem; margin-bottom: 10px; }
 #info p { margin-bottom: 10px; font-size: .95rem; line-height: 1.45; }
 #info form { text-align: right; }
-details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
-.calc summary { min-height: 28px; font-weight: 700; cursor: pointer; }
+details.calc, details.sol { margin-top: 12px; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 /* Filas compactas en una línea: etiqueta | control | valor (columnas fijas para que todo quede alineado). */
 .calc, .sol { --lab: 84px; --val: 4.6em; }
 .calc .f, .sl { display: grid; align-items: center; column-gap: 8px; margin-top: 6px; font-size: .875rem; }
@@ -179,8 +178,8 @@ details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); bo
 .lane.p { margin-top: 8px; } .lane > div { flex: 1; margin-top: 0; }
 .lane .ic { width: 13px; height: 13px; } .ic-bolt { color: var(--medio); }
 .lane ~ .strip-l { margin-left: 16px; }
-#casa, .sol { margin-bottom: 8px; padding: 12px; }
-.sol { margin: 12px 0 0; font-size: .875rem; }
+#casa { margin-bottom: 8px; padding: 12px; }
+.sol { font-size: .875rem; }
 #casa p { margin: 4px 0 8px; }
 #casa-q { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
 .sug { list-style: none; margin: 4px 0 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -189,7 +188,11 @@ details.calc { margin-top: 12px; padding: 10px 12px; background: var(--card); bo
 .btns { display: flex; gap: 8px; margin-top: 10px; } .btns .btn { flex: 1; padding: 8px; }
 .btn.p { background: var(--fg); color: var(--card); border-color: var(--fg); font-weight: 700; }
 .btn:disabled { opacity: .5; cursor: default; }
-.sol-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.sl label small { display: block; font-size: .7rem; line-height: 1.2; color: var(--muted); font-weight: 400; }
+.chk { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .875rem; }
+.calc summary, .sol summary { min-height: 28px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.sol summary .mini { float: right; display: inline-flex; align-items: center; line-height: 1.75rem; gap: 4px; font-size: .8rem; font-weight: 400; color: var(--muted); }
+.sol summary .mini .ic { width: 16px; height: 16px; }
 .lnk { padding: 4px 0; border: 0; background: none; color: var(--accent); text-decoration: underline; text-align: right; }
 .day { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .day p, .sol .k { color: var(--muted); } .day p { font-size: .75rem; }
@@ -275,25 +278,27 @@ footer { text-align: center; margin-top: 12px; }
           <div class="ticks muted" aria-hidden="true"><span style="left: 0; transform: none">50</span><span style="--p: .2">60</span><span style="--p: .6">80</span><span style="left: auto; right: 0; transform: none">100</span></div></div>
         <div class="f" role="radiogroup" aria-labelledby="l-fase"><span id="l-fase">Conexión</span><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></div>
         <div class="sl"><label for="c-amp">Intensidad</label><output for="c-amp" id="o-amp"></output><input id="c-amp" name="amp" type="range" min="5" max="32" step="1" value="16"></div>
-        <div class="sl"><label for="c-kwmax">Potencia máx.</label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas">
+        <div class="sl"><label for="c-kwmax">Potencia P1<small>punta y llano</small></label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas">
           <datalist id="kw-paradas"><option value="3.45"></option><option value="4.6"></option><option value="5.75"></option><option value="6.9"></option><option value="9.2"></option></datalist>
           <div class="ticks stops muted" aria-hidden="true"><span style="--p: .1167">3,45</span><span style="--p: .1714">4,6</span><span style="--p: .2262">5,75</span><span style="--p: .2810">6,9</span><span style="--p: .3905">9,2</span></div>
           <p class="stops-txt muted">3,45 · 4,6 · 5,75 · 6,9 · 9,2 kW</p></div>
+        <label class="chk"><input type="checkbox" name="p2">Otra potencia en valle (P2)</label>
+        <div class="sl" id="sl-p2" hidden><label for="c-kwmax2">Potencia P2<small>valle</small></label><output for="c-kwmax2" id="o-kwmax2"></output><input id="c-kwmax2" name="kwmax2" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas"></div>
         <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
         <p id="calc-kw" class="muted"></p>
         <div id="calc-out" class="res" aria-live="polite"></div>
         <p class="muted" style="margin-top: 8px">Con IVA (21 %) e impuesto eléctrico (5,11 %). Sin término de potencia. Pérdidas de carga del 10 %.</p>
       </form>
     </details>
-    <section id="sol" class="sol" hidden>
-      <div class="sol-h"><h2>Sol para tus placas</h2><button type="button" id="sol-loc" class="lnk" aria-label="Cambiar población" hidden></button></div>
+    <details id="sol" class="sol" hidden>
+      <summary>Sol para tus placas<span id="sol-mini" class="mini"></span></summary>
       <button type="button" id="sol-set" class="btn" hidden>Poner mi población</button>
       <div id="sol-data" hidden>
         <div id="sol-rows"></div>
         <div class="sl"><label for="s-kwp">Tus placas</label><output for="s-kwp" id="o-kwp"></output><input id="s-kwp" type="range" min="0.5" max="10" step="0.1" value="3"></div>
-        <p class="muted" style="margin-top: 6px">Estimación: radiación × potencia × 80 %. Datos: Open-Meteo.</p>
+        <p class="muted" style="margin-top: 6px">Población: <button type="button" id="sol-loc" class="lnk" aria-label="Cambiar población"></button> · Estimación: radiación × potencia × 80 %. Datos: Open-Meteo.</p>
       </div>
-    </section>
+    </details>
   </div>
   <dialog id="info">
     <div>
@@ -310,7 +315,7 @@ footer { text-align: center; margin-top: 12px; }
   </footer>
 </main>
 <script type="module">
-import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargeCost, cheapestStart, fmtDuration, chargeSlots, PERF, geoUrl, forecastUrl, ICON_ES, weatherIcon, slotSolar, bestSolarStart, dailyKwhM2, sunHours } from './pvpc.js';
+import { VERSION, madridNow, addDays, isValidDate, buildUrl, parse, currentIndex, stats, level, fmt, fmtNum, fmtDate, fmtRange, period, TAX, chargeKw, chargeEnergy, chargePlan, cheapestPlan, fmtDuration, chargeSlots, PERF, geoUrl, forecastUrl, ICON_ES, weatherIcon, slotSolar, bestSolarStart, dailyKwhM2, sunHours } from './pvpc.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => {
@@ -440,7 +445,7 @@ function render() {
 
 // --- Calculadora de carga: datos del coche en localStorage (sin la hora de inicio) ---
 const CAR_KEY = 'pvpc-coche';
-const CAR = ['bat', 'soc', 'obj', 'fase', 'amp', 'kwmax'];
+const CAR = ['bat', 'soc', 'obj', 'fase', 'amp', 'kwmax', 'kwmax2', 'p2'];
 const hhmm = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const dayWord = (t) => ['hoy', 'mañana', 'pasado mañana'][(Date.parse(madridNow(new Date(t)).date) - Date.parse(loadedDate)) / 864e5] ?? '';
 
@@ -489,28 +494,35 @@ function updateCalc() {
   const [bat, soc, obj, amp, max] = ['bat', 'soc', 'obj', 'amp', 'kwmax'].map((k) => f[k].valueAsNumber);
   const tri = f.fase.value === '3';
   const { line, kw } = chargeKw(tri ? 3 : 1, amp, max);
-  $('calc-kw').textContent = isNaN(kw) ? '' : `${String(amp).replace('.', ',')} A × ${tri ? '400 V × √3' : '230 V'} = ${dec(line, 1)} kW → se carga a ${dec(kw, 1)} kW`;
+  const kw2 = f.p2.checked ? chargeKw(tri ? 3 : 1, amp, f.kwmax2.valueAsNumber).kw : kw;  // P2 (valle) = P1 si no hay otra
+  const lineTxt = `${String(amp).replace('.', ',')} A × ${tri ? '400 V × √3' : '230 V'} = ${dec(line, 1)} kW`;
+  // Limitada por la potencia contratada: su valor exacto (3,45); si no, la de la línea con 1 decimal.
+  const kwT = (k) => (k < line ? String(+k.toFixed(2)).replace('.', ',') : dec(k, 1));
+  $('calc-kw').textContent = isNaN(kw) ? '' : kw === kw2 ? `${lineTxt} → se carga a ${kwT(kw)} kW`
+    : `${lineTxt} → carga a ${kwT(kw)} kW en P1 y a ${kwT(kw2)} kW en P2`;
   const out = $('calc-out');
   // #calc-out es aria-live: solo se toca si el contenido cambia (el ciclo de 30 s no debe repetir el anuncio).
   const show = (...nodes) => { if (nodes.map((n) => n.outerHTML).join('') !== out.innerHTML) out.replaceChildren(...nodes); };
   const kwh = chargeEnergy(bat, soc, obj);
-  const hours = kwh / kw;
-  const mins = Math.round(hours * 60);
-  const msg = kwh < 0.05 || !(mins > 0) ? 'La carga actual ya llega al objetivo.' : '';
+  const hours = kwh / kw;  // a P1 constante: solo como respaldo si no cabe
+  const msg = kwh < 0.05 || !(Math.round(hours * 60) > 0) ? 'La carga actual ya llega al objetivo.' : '';
   if (msg) return show(el('p', msg));
 
   const prices = S.map((s) => s.price);
   const i0 = Math.max(0, S.findIndex((s) => String(s.t) === f.ini.value));
-  const chosen = chargeCost(prices, i0, hours, kw, frac);
-  const best = cheapestStart(prices, hours, kw, frac);
-  const span = (i) => chargeSlots(hours, i === 0 ? frac : 1);
+  // kW de cada tramo: P2 en valle, P1 en el resto; la duración depende de dónde empiece la carga.
+  const kws = S.map((s) => (period(s.date, s.hour) === 'valle' ? kw2 : kw));
+  const plans = prices.map((_, i) => chargePlan(prices, i, kwh, kws, frac));
+  const chosen = plans[i0]?.cost ?? null;
+  const best = cheapestPlan(prices, kwh, kws, frac);
+  const span = (i) => plans[i]?.slots ?? chargeSlots(hours, i === 0 ? frac : 1);
   const ap = (i) => (S.slice(i, i + span(i)).some((s) => s.est) ? '≈ ' : '');
   const cents = (c) => Math.round(c * TAX * 100);
   const eur = (i, c) => ap(i) + dec(cents(c) / 100, 2) + ' €';
   const at = (i) => (live && i === 0 ? `ahora (${nowLabel})` : `a las ${S[i].hh} (${S[i].word})`);
   // Fin = inicio real + los mismos minutos redondeados que la duración; la etiqueta sale del tramo que contiene ese instante.
   const end = (i) => {
-    const t = (live && i === 0 ? nowMs : S[i].t) + mins * 60e3;
+    const t = (live && i === 0 ? nowMs : S[i].t) + Math.round(plans[i].hours * 60) * 60e3;
     const k = S.findIndex((s) => t >= s.t && t < s.t + 36e5);
     return `termina a las ${hhmm.format(t)}${k >= 0 && S[k].hh.includes('(2ª)') ? ' (2ª)' : ''} (${k >= 0 ? S[k].word : dayWord(t)})`;
   };
@@ -523,7 +535,7 @@ function updateCalc() {
     return d;
   };
   const noFit = `No da tiempo antes de que acaben los precios disponibles (fin de ${S.at(-1).word})`;
-  const rows = [row('Energía de la red', dec(kwh, 1) + ' kWh'), row('Tiempo de carga', fmtDuration(hours))];
+  const rows = [row('Energía de la red', dec(kwh, 1) + ' kWh'), row('Tiempo de carga', fmtDuration(plans[i0]?.hours ?? hours))];
   rows.push(chosen === null ? el('p', noFit) : row(`Empezando ${at(i0)}`, eur(i0, chosen), end(i0)));
   if (best && chosen !== null) {
     const save = cents(chosen) - cents(best.cost);  // en céntimos ya redondeados, como se muestran
@@ -544,12 +556,12 @@ function updateCalc() {
   lbl.append(el('span', live ? 'ahora' : `${S[0].word} ${S[0].hh}`), el('span', `${S.at(-1).word} ${S.at(-1).hh}`));
   // Sol (opción C): mismo tramo que la carga más barata, pero el que más producen las placas; solo con previsión y algo de luz.
   const ws = S.map((s) => solarSlot(s.date, s.hour)?.w ?? 0);
-  const bs = solar ? bestSolarStart(ws, hours, $('s-kwp').valueAsNumber, frac, kwh) : null;
+  const bs = solar ? bestSolarStart(ws, (s) => plans[s]?.hours, $('s-kwp').valueAsNumber, frac, kwh) : null;
   const tail = [lane('bolt', strip, 'p')];
   if (bs && bs.kwh > 0) {
     const nb = span(bs.start);
     const sc = bs.start === best?.start ? 'coincide con la hora más barata'
-      : `${end(bs.start)} · ${eur(bs.start, chargeCost(prices, bs.start, hours, kw, frac))}`;
+      : `${end(bs.start)} · ${eur(bs.start, plans[bs.start].cost)}`;
     const r = row(`Con más sol: empezar ${at(bs.start)}`, bs.kwh >= kwh - 0.05 ? 'toda la carga de tus placas' : `≈ ${dec(bs.kwh, 1)} kWh de tus placas`, sc);
     r.firstChild.firstChild.className = 'ic-l';
     r.firstChild.firstChild.prepend(icon('sun', '', true));
@@ -568,9 +580,9 @@ function updateCalc() {
 // Valor de cada deslizador con su unidad, al lado de la etiqueta.
 function showVals() {
   const f = $('calc').elements;
-  const unit = { bat: ' kWh', soc: ' %', obj: ' %', amp: ' A', kwmax: ' kW' };
+  const unit = { bat: ' kWh', soc: ' %', obj: ' %', amp: ' A', kwmax: ' kW', kwmax2: ' kW' };
   for (const k in unit) {
-    const text = (k === 'kwmax' ? String(+f[k].valueAsNumber.toFixed(2)).replace('.', ',') : f[k].value) + unit[k];
+    const text = (k.startsWith('kwmax') ? String(+f[k].valueAsNumber.toFixed(2)).replace('.', ',') : f[k].value) + unit[k];
     $('o-' + k).textContent = text;
     f[k].setAttribute('aria-valuetext', text);
   }
@@ -580,8 +592,9 @@ try {
   // Los valores de versiones anteriores (16,5 A, 5,75 kW…) los ajusta el propio deslizador a su rango y paso.
   // Solo números (o '1'/'3' en la conexión); lo demás deja el valor por defecto del HTML.
   const ok = (k, v) => (k === 'fase' ? v === '1' || v === '3' : (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) && Number.isFinite(Number(v)));
-  for (const k of CAR) if (ok(k, car?.[k])) $('calc').elements[k].value = car[k];
+  for (const k of CAR) if (k === 'p2') $('calc').elements.p2.checked = car?.p2 === true; else if (ok(k, car?.[k])) $('calc').elements[k].value = car[k];
 } catch {}  // almacenamiento bloqueado o dato corrupto: valores por defecto
+$('sl-p2').hidden = !$('calc').elements.p2.checked;
 showVals();
 // Botón de aspecto: pasa al tema opuesto al que se ve; si ese coincide con el del sistema, vuelve a "automático".
 applyTheme(document.documentElement.dataset.pref);  // etiqueta inicial del botón
@@ -603,22 +616,27 @@ $('calc').elements.ini.onfocus = $('calc').elements.ini.onpointerdown = () => up
 // Potencia: al arrastrar (ratón o dedo) se pega a las paradas habituales si queda a ≤ 0,2 kW; con el teclado no,
 // para que las flechas puedan salir de una parada.
 const PARADAS = [3.45, 4.6, 5.75, 6.9, 9.2];
-const kwIn = $('calc').elements.kwmax;
-kwIn.onpointerdown = () => { kwIn.dataset.ptr = '1'; };
-kwIn.onkeydown = () => { delete kwIn.dataset.ptr; };
+const kwIns = [$('calc').elements.kwmax, $('calc').elements.kwmax2];
+for (const k of kwIns) {
+  k.onpointerdown = () => { k.dataset.ptr = '1'; };
+  k.onkeydown = () => { delete k.dataset.ptr; };
+}
 $('calc').oninput = (e) => {
-  if (e.target === kwIn && kwIn.dataset.ptr) {
-    const p = PARADAS.find((x) => Math.abs(x - kwIn.valueAsNumber) <= 0.2);
-    if (p !== undefined) kwIn.value = p;
+  if (kwIns.includes(e.target) && e.target.dataset.ptr) {
+    const p = PARADAS.find((x) => Math.abs(x - e.target.valueAsNumber) <= 0.2);
+    if (p !== undefined) e.target.value = p;
   }
+  $('sl-p2').hidden = !$('calc').elements.p2.checked;
   showVals();
-  try { localStorage.setItem(CAR_KEY, JSON.stringify(Object.fromEntries(CAR.map((k) => [k, $('calc').elements[k].value])))); } catch {}
+  const v = (k) => (k === 'p2' ? $('calc').elements.p2.checked : $('calc').elements[k].value);
+  try { localStorage.setItem(CAR_KEY, JSON.stringify(Object.fromEntries(CAR.map((k) => [k, v(k)])))); } catch {}
   updateCalc();
 };
 
 // Tarjeta de sol (opción B), al final de la página.
 function renderSol() {
   const rows = [];
+  let mini = null;
   if (casa && solar) {
     const kp = $('s-kwp').valueAsNumber;
     for (const [title, date] of [['Hoy', loadedDate], ['Mañana', addDays(loadedDate, 1)]]) {
@@ -631,6 +649,7 @@ function renderSol() {
       t.append(el('b', title), el('span', ` · ${dec(m2, 1)} kWh/m²`, 'k'), el('p', `≈ ${kwhTxt(m2 * kp * PERF)} kWh con tus placas · sol de ${a} a ${b} h`));
       const d = el('div', null, 'day');
       d.append(t, icon(weatherIcon(solar.daily.weather_code[i]), 'big'));
+      if (title === 'Hoy') mini = [icon(weatherIcon(solar.daily.weather_code[i]), '', true), `hoy ≈ ${kwhTxt(m2 * kp * PERF)} kWh`];
       if (rows.length) rows.push(el('div', null, 'sep'));
       rows.push(d);
     }
@@ -638,7 +657,7 @@ function renderSol() {
   $('sol').hidden = !!casa && !rows.length;  // con población y sin previsión: nada de sol
   $('sol-set').hidden = !!casa;
   $('sol-data').hidden = !casa;
-  $('sol-loc').hidden = !casa;
+  $('sol-mini').replaceChildren(...(mini ?? []));
   $('sol-loc').textContent = casa?.name ?? '';
   $('sol-rows').replaceChildren(...rows);
 }
