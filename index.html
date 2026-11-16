@@ -195,6 +195,14 @@ details.calc, details.sol { margin-top: 12px; padding: 10px 12px; background: va
 .sol summary .mini { float: right; display: inline-flex; align-items: center; line-height: 1.75rem; gap: 4px; font-size: .8rem; font-weight: 400; color: var(--muted); }
 .sol summary .mini .ic { width: 16px; height: 16px; }
 .lnk { padding: 4px 0; border: 0; background: none; color: var(--accent); text-decoration: underline; text-align: right; }
+/* Campos que casi no se tocan: en normal solo el valor (enlace); al tocarlo se abre el control con botón OK. */
+.sl > .lnk, .f > .lnk { grid-column: 2 / -1; grid-row: 1; justify-self: end; min-height: 34px; font-weight: 700; }
+.sl > span small { display: block; font-size: .7rem; line-height: 1.2; color: var(--muted); font-weight: 400; }
+[data-ed]:not(.ed-open) > :is(input, output, .ticks, .stops-txt, .seg, .ed-c), [data-ed].ed-open > .ed-n { display: none; }
+[data-ed].ed-open { margin-inline: -6px; padding-inline: 6px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.ok { grid-column: 3; grid-row: 2; justify-self: end; margin-top: 2px; padding: 3px 10px; border: 1px solid var(--fg); border-radius: 999px; background: var(--fg); color: var(--card); font-size: .8rem; font-weight: 700; }
+.ok-line { grid-column: 1 / -1; justify-self: end; margin: 4px 0; }
+#sl-p2:not([hidden]) ~ .ok-line { display: none; }
 .day { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .day p, .sol .k { color: var(--muted); } .day p { font-size: .75rem; }
 .sep { border-top: 1px solid var(--line); margin: 8px 0; }
@@ -272,19 +280,23 @@ footer { text-align: center; margin-top: 12px; }
     <details class="calc">
       <summary>Calcular carga del coche</summary>
       <form id="calc">
-        <div class="sl"><label for="c-bat">Batería</label><output for="c-bat" id="o-bat"></output><input id="c-bat" name="bat" type="range" min="5" max="120" step="1" value="60"></div>
+        <div class="sl" data-ed="bat"><label for="c-bat">Batería</label><output for="c-bat" id="o-bat"></output><input id="c-bat" name="bat" type="range" min="5" max="120" step="1" value="60"><button type="button" class="lnk ed-n"></button><button type="button" class="ok ed-c">OK</button></div>
         <div class="sl"><label for="c-soc">Carga actual</label><output for="c-soc" id="o-soc"></output><input id="c-soc" name="soc" type="range" min="0" max="99" step="1" value="20"></div>
         <div class="sl"><label for="c-obj">Cargar hasta</label><output for="c-obj" id="o-obj"></output><input id="c-obj" name="obj" type="range" min="50" max="100" step="5" value="80" list="obj-marcas">
           <datalist id="obj-marcas"><option value="60"></option><option value="80"></option><option value="100"></option></datalist>
           <div class="ticks muted" aria-hidden="true"><span style="left: 0; transform: none">50</span><span style="--p: .2">60</span><span style="--p: .6">80</span><span style="left: auto; right: 0; transform: none">100</span></div></div>
-        <div class="f" role="radiogroup" aria-labelledby="l-fase"><span id="l-fase">Conexión</span><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span></div>
+        <div class="f" role="radiogroup" aria-labelledby="l-fase" data-ed="fase"><span id="l-fase">Conexión</span><span class="seg"><label><input type="radio" name="fase" value="1" checked>Monofásica</label><label><input type="radio" name="fase" value="3">Trifásica</label></span><button type="button" class="lnk ed-n"></button><button type="button" class="ok ok-line ed-c">OK</button></div>
         <div class="sl"><label for="c-amp">Intensidad</label><output for="c-amp" id="o-amp"></output><input id="c-amp" name="amp" type="range" min="5" max="32" step="1" value="16"></div>
-        <div class="sl"><label for="c-kwmax">Potencia P1<small>punta y llano</small></label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas">
+        <div class="sl" data-ed="kw"><label for="c-kwmax">Potencia P1<small>punta y llano</small></label><output for="c-kwmax" id="o-kwmax"></output><input id="c-kwmax" name="kwmax" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas">
           <datalist id="kw-paradas"><option value="3.45"></option><option value="4.6"></option><option value="5.75"></option><option value="6.9"></option><option value="9.2"></option></datalist>
           <div class="ticks stops muted" aria-hidden="true"><span style="--p: .1167">3,45</span><span style="--p: .1714">4,6</span><span style="--p: .2262">5,75</span><span style="--p: .2810">6,9</span><span style="--p: .3905">9,2</span></div>
-          <p class="stops-txt muted">3,45 · 4,6 · 5,75 · 6,9 · 9,2 kW</p></div>
-        <label class="chk"><input type="checkbox" name="p2">Otra potencia en valle (P2)</label>
-        <div class="sl" id="sl-p2" hidden><label for="c-kwmax2">Potencia P2<small>valle</small></label><output for="c-kwmax2" id="o-kwmax2"></output><input id="c-kwmax2" name="kwmax2" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas"></div>
+          <p class="stops-txt muted">3,45 · 4,6 · 5,75 · 6,9 · 9,2 kW</p><button type="button" class="lnk ed-n"></button><button type="button" class="ok ed-c">OK</button></div>
+        <div data-ed="p2">
+          <div class="sl ed-n"><span>Potencia P2<small>valle</small></span><button type="button" class="lnk"></button></div>
+          <label class="chk ed-c"><input type="checkbox" name="p2">Otra potencia en valle (P2)</label>
+          <div class="sl ed-c" id="sl-p2" hidden><label for="c-kwmax2">Potencia P2<small>valle</small></label><output for="c-kwmax2" id="o-kwmax2"></output><input id="c-kwmax2" name="kwmax2" type="range" min="1" max="22" step="0.05" value="7.4" list="kw-paradas"><button type="button" class="ok">OK</button></div>
+          <button type="button" class="ok ok-line ed-c">OK</button>
+        </div>
         <label class="f"><span>Empezar a las</span><select name="ini"></select></label>
         <label class="f"><span>Listo antes de</span><select name="fin"></select></label>
         <p id="calc-kw" class="muted"></p>
@@ -297,7 +309,7 @@ footer { text-align: center; margin-top: 12px; }
       <button type="button" id="sol-set" class="btn" hidden>Poner mi población</button>
       <div id="sol-data" hidden>
         <div id="sol-rows"></div>
-        <div class="sl"><label for="s-kwp">Tus placas</label><output for="s-kwp" id="o-kwp"></output><input id="s-kwp" type="range" min="0.5" max="10" step="0.1" value="3"></div>
+        <div class="sl" data-ed="kwp"><label for="s-kwp">Tus placas</label><output for="s-kwp" id="o-kwp"></output><input id="s-kwp" type="range" min="0.5" max="10" step="0.1" value="3"><button type="button" class="lnk ed-n"></button><button type="button" class="ok ed-c">OK</button></div>
         <p class="muted" style="margin-top: 6px">Población: <button type="button" id="sol-loc" class="lnk" aria-label="Cambiar población"></button> · Estimación: radiación × potencia × 80 %. Datos: Open-Meteo.</p>
       </div>
     </details>
@@ -598,6 +610,33 @@ function updateCalc() {
   show(...rows, ...tail);
 }
 
+// Campos de edición poco frecuente: en normal solo el valor (enlace); al tocarlo se abre ese campo (uno a la vez) hasta pulsar OK.
+const ED = {
+  bat: ['batería', () => $('o-bat').textContent],
+  fase: ['conexión', () => $('calc').querySelector('[name=fase]:checked').parentElement.textContent],
+  kw: ['potencia P1', () => $('o-kwmax').textContent],
+  p2: ['potencia P2', () => ($('calc').elements.p2.checked ? $('o-kwmax2').textContent : 'igual que P1')],
+  kwp: ['placas', () => $('o-kwp').textContent],
+};
+function edLinks() {
+  for (const box of document.querySelectorAll('[data-ed]')) {
+    const [name, txt] = ED[box.dataset.ed], b = box.querySelector('.lnk'), t = txt();
+    b.textContent = t;
+    b.setAttribute('aria-label', `Cambiar ${name}, ${t}`);
+  }
+}
+function edOpen(box) {
+  for (const b of document.querySelectorAll('[data-ed]')) {
+    b.classList.toggle('ed-open', b === box);
+    b.querySelector('.lnk').setAttribute('aria-expanded', b === box);
+  }
+  box?.querySelector('input[type=checkbox], input:checked, input[type=range]').focus();
+}
+for (const box of document.querySelectorAll('[data-ed]')) {
+  box.querySelector('.lnk').onclick = () => edOpen(box);
+  box.onclick = (e) => { if (e.target.closest('.ok')) { edOpen(null); box.querySelector('.lnk').focus(); } };
+}
+
 // Valor de cada deslizador con su unidad, al lado de la etiqueta.
 function showVals() {
   const f = $('calc').elements;
@@ -607,6 +646,7 @@ function showVals() {
     $('o-' + k).textContent = text;
     f[k].setAttribute('aria-valuetext', text);
   }
+  edLinks();
 }
 try {
   const car = JSON.parse(localStorage.getItem(CAR_KEY));
@@ -687,12 +727,14 @@ function renderSol() {
 $('s-kwp').oninput = () => {
   const v = $('s-kwp').valueAsNumber;
   $('o-kwp').textContent = dec(v, 1) + ' kWp';
+  edLinks();
   try { localStorage.setItem(KWP_KEY, String(v)); } catch {}
   renderSol();
   updateCalc();
 };
 try { const k = Number(localStorage.getItem(KWP_KEY)); if (k >= 0.5 && k <= 10) $('s-kwp').value = k; } catch {}
 $('o-kwp').textContent = dec($('s-kwp').valueAsNumber, 1) + ' kWp';
+edLinks();
 
 // Previsión de Open-Meteo: como mucho una vez por hora; si falla, no hay sol en pantalla y los precios siguen igual.
 async function loadSolar(force) {
